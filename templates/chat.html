@@ -1,0 +1,295 @@
+<div id="chat-container" class="fixed bottom-4 right-4 z-50">
+    <button id="chat-toggle" onclick="toggleChat()" class="bg-green-600 text-white rounded-full p-4 shadow-lg hover:bg-green-700 flex items-center space-x-2">
+        <i class="ri-chat-3-line text-xl"></i>
+        <span>Carbon Assistant</span>
+    </button>
+
+    <div id="chat-window" class="hidden bg-white rounded-lg shadow-xl w-96">
+        <div class="bg-green-600 text-white p-4 flex justify-between items-center">
+            <h3 class="font-semibold">Carbon Knowledge Base</h3>
+            <button onclick="toggleChat()" class="hover:text-gray-200">&times;</button>
+        </div>
+
+        <div id="chat-messages" class="h-96 overflow-y-auto p-4">
+            <div class="bot-message bg-gray-100 rounded p-3 mb-4">
+                <p class="mb-3">Select a topic to learn more:</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="selectTopic('carbon')" class="topic-btn bg-green-50 hover:bg-green-100 p-3 rounded text-left">
+                        <i class="ri-leaf-line mr-2"></i>Carbon Emissions
+                    </button>
+                    <button onclick="selectTopic('markets')" class="topic-btn bg-blue-50 hover:bg-blue-100 p-3 rounded text-left">
+                        <i class="ri-exchange-line mr-2"></i>Carbon Markets
+                    </button>
+                    <button onclick="selectTopic('sustainability')" class="topic-btn bg-yellow-50 hover:bg-yellow-100 p-3 rounded text-left">
+                        <i class="ri-recycle-line mr-2"></i>Sustainability
+                    </button>
+                    <button onclick="selectTopic('standards')" class="topic-btn bg-purple-50 hover:bg-purple-100 p-3 rounded text-left">
+                        <i class="ri-file-list-3-line mr-2"></i>Standards & ESG
+                    </button>
+                    <button onclick="selectTopic('energy')" class="topic-btn bg-red-50 hover:bg-red-100 p-3 rounded text-left">
+                        <i class="ri-lightbulb-line mr-2"></i>Renewable Energy
+                    </button>
+                    <button onclick="selectTopic('climate')" class="topic-btn bg-indigo-50 hover:bg-indigo-100 p-3 rounded text-left">
+                        <i class="ri-temp-hot-line mr-2"></i>Climate Change
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <form id="chat-form" class="p-4 border-t border-gray-200">
+            <div class="flex space-x-2">
+                <input type="text" id="user-message" 
+                    class="flex-1 border rounded p-2 focus:ring-2 focus:ring-green-500"
+                    placeholder="Ask a question...">
+                <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    <i class="ri-send-plane-fill"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const topics = {
+    carbon: {
+        name: 'Carbon Emissions',
+        sections: [
+            {
+                name: 'Basics',
+                questions: [
+                    {q: 'What are carbon emissions?', 
+                     a: 'Carbon emissions are greenhouse gases released into the atmosphere, primarily from burning fossil fuels, deforestation, and industrial processes.'},
+                    {q: 'What is the impact on climate change?',
+                     a: 'Carbon emissions trap heat in the atmosphere, leading to global warming, rising sea levels, extreme weather events, and ecosystem disruption.'},
+                    {q: 'What are the primary sources?',
+                     a: '1. Burning fossil fuels for energy\n2. Industrial processes\n3. Transportation\n4. Agriculture\n5. Deforestation'},
+                    {q: 'What are Scope 1, 2, and 3 emissions?',
+                     a: 'Scope 1: Direct emissions from owned sources\nScope 2: Indirect emissions from purchased energy\nScope 3: All other indirect emissions in value chain'}
+                ]
+            },
+            {
+                name: 'Carbon Credits & Offsets',
+                questions: [
+                    {q: 'What are carbon credits?',
+                     a: 'Carbon credits are tradable permits representing the right to emit one tonne of CO2 or equivalent greenhouse gases.'},
+                    {q: 'How does carbon offsetting work?',
+                     a: 'Carbon offsetting involves compensating for emissions by funding projects that reduce or capture equivalent amounts of CO2 elsewhere.'},
+                    {q: 'What is the carbon credit market?',
+                     a: 'A marketplace where carbon credits are bought and sold between organizations to meet emission reduction targets.'}
+                ]
+            },
+            {
+                name: 'Measurement & Reporting',
+                questions: [
+                    {q: 'How are carbon emissions measured?',
+                     a: 'Through direct measurement of greenhouse gases, calculations based on energy consumption, and emission factors for different activities.'},
+                    {q: 'What tools are used?',
+                     a: '1. Direct emission monitors\n2. Energy consumption meters\n3. Carbon calculators\n4. Life cycle assessment tools'}
+                ]
+            }
+        ]
+    },
+    markets: {
+        name: 'Carbon Markets & Trading',
+        sections: [
+            {
+                name: 'Market Basics',
+                questions: [
+                    {q: 'What is a carbon market?',
+                     a: 'A trading system where carbon credits can be bought and sold to help organizations meet emission reduction targets.'},
+                    {q: 'What types of markets exist?',
+                     a: '1. Compliance markets (mandatory)\n2. Voluntary markets\n3. Regional trading schemes\n4. International carbon markets'}
+                ]
+            },
+            {
+                name: 'Trading & Pricing',
+                questions: [
+                    {q: 'How is carbon priced?',
+                     a: 'Carbon prices are determined by market supply and demand, regulatory requirements, and project quality.'},
+                    {q: 'What affects market values?',
+                     a: '1. Government policies\n2. Economic conditions\n3. Technology advances\n4. International agreements'}
+                ]
+            }
+        ]
+    },
+    sustainability: {
+        name: 'Sustainability',
+        sections: [
+            {
+                name: 'Core Concepts',
+                questions: [
+                    {q: 'What is sustainability?',
+                     a: 'Meeting present needs without compromising future generations\' ability to meet their needs.'},
+                    {q: 'What are the three pillars?',
+                     a: '1. Environmental: Protecting natural resources\n2. Social: Ensuring equity and well-being\n3. Economic: Sustainable growth'}
+                ]
+            },
+            {
+                name: 'Business Practices',
+                questions: [
+                    {q: 'What are sustainable business practices?',
+                     a: '1. Energy efficiency\n2. Waste reduction\n3. Sustainable sourcing\n4. Employee well-being\n5. Community engagement'},
+                    {q: 'Benefits of sustainability?',
+                     a: '1. Cost savings\n2. Risk reduction\n3. Innovation opportunities\n4. Enhanced reputation\n5. Competitive advantage'}
+                ]
+            }
+        ]
+    },
+    standards: {
+        name: 'Reporting Standards',
+        sections: [
+            {
+                name: 'GRI Standards',
+                questions: [
+                    {q: 'What is GRI?',
+                     a: 'Global Reporting Initiative - provides standardized sustainability reporting guidelines.'},
+                    {q: 'What are the GRI Standards?',
+                     a: '1. GRI 1: Foundation\n2. GRI 2: General Disclosures\n3. GRI 3: Material Topics'},
+                    {q: 'Why use GRI?',
+                     a: '1. Global recognition\n2. Comprehensive framework\n3. Stakeholder focus\n4. Comparability'}
+                ]
+            },
+            {
+                name: 'ESG Reporting',
+                questions: [
+                    {q: 'What is ESG?',
+                     a: 'Environmental, Social, and Governance criteria used to evaluate organization\'s sustainability and ethical impact.'},
+                    {q: 'ESG factors?',
+                     a: 'Environmental: Climate impact, resource use\nSocial: Labor practices, community relations\nGovernance: Board structure, business ethics'}
+                ]
+            }
+        ]
+    },
+    energy: {
+        name: 'Renewable Energy',
+        sections: [
+            {
+                name: 'Types & Technology',
+                questions: [
+                    {q: 'What is renewable energy?',
+                     a: 'Energy from natural sources that are continuously replenished like sun, wind, and water.'},
+                    {q: 'Main types?',
+                     a: '1. Solar\n2. Wind\n3. Hydroelectric\n4. Geothermal\n5. Biomass'}
+                ]
+            },
+            {
+                name: 'Implementation',
+                questions: [
+                    {q: 'Benefits of renewable energy?',
+                     a: '1. Zero/low emissions\n2. Lower long-term costs\n3. Energy independence\n4. Job creation'},
+                    {q: 'Challenges?',
+                     a: '1. Initial costs\n2. Intermittency\n3. Storage needs\n4. Grid integration'}
+                ]
+            }
+        ]
+    },
+    climate: {
+        name: 'Climate Change',
+        sections: [
+            {
+                name: 'Basics',
+                questions: [
+                    {q: 'What is climate change?',
+                     a: 'Long-term changes in global weather patterns and temperatures, primarily caused by human greenhouse gas emissions.'},
+                    {q: 'Main impacts?',
+                     a: '1. Rising temperatures\n2. Sea level rise\n3. Extreme weather\n4. Ecosystem disruption'}
+                ]
+            },
+            {
+                name: 'Action & Policy',
+                questions: [
+                    {q: 'What is the Paris Agreement?',
+                     a: 'International treaty to limit global temperature rise to well below 2°C above pre-industrial levels.'},
+                    {q: 'Key solutions?',
+                     a: '1. Renewable energy\n2. Energy efficiency\n3. Forest protection\n4. Sustainable transport'}
+                ]
+            }
+        ]
+    }
+};
+
+function toggleChat() {
+    const chatWindow = document.getElementById('chat-window');
+    const chatToggle = document.getElementById('chat-toggle');
+    chatWindow.classList.toggle('hidden');
+    chatToggle.classList.toggle('hidden');
+}
+
+function selectTopic(topic) {
+    const topicData = topics[topic];
+    addMessage(`Choose a section about ${topicData.name}:`, 'bot');
+    
+    const sectionsDiv = document.createElement('div');
+    sectionsDiv.className = 'grid gap-2 mt-2';
+    
+    topicData.sections.forEach(section => {
+        const sectionBtn = document.createElement('button');
+        sectionBtn.className = 'text-left bg-blue-50 hover:bg-blue-100 p-2 rounded font-semibold';
+        sectionBtn.textContent = section.name;
+        sectionBtn.onclick = () => showQuestions(section);
+        sectionsDiv.appendChild(sectionBtn);
+    });
+    
+    const messages = document.getElementById('chat-messages');
+    messages.appendChild(sectionsDiv);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+function showQuestions(section) {
+    addMessage(`Select a question about ${section.name}:`, 'bot');
+    
+    const questionsDiv = document.createElement('div');
+    questionsDiv.className = 'grid gap-2 mt-2';
+    
+    section.questions.forEach(q => {
+        const btn = document.createElement('button');
+        btn.className = 'text-left bg-gray-50 hover:bg-gray-100 p-2 rounded';
+        btn.textContent = q.q;
+        btn.onclick = () => showAnswer(q.a);
+        questionsDiv.appendChild(btn);
+    });
+    
+    const messages = document.getElementById('chat-messages');
+    messages.appendChild(questionsDiv);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+function showAnswer(answer) {
+    addMessage(answer, 'bot');
+}
+
+function addMessage(text, sender) {
+    const messages = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = `${sender}-message ${sender === 'user' ? 'text-right' : ''} mb-3`;
+    div.innerHTML = `
+        <div class="inline-block ${sender === 'user' ? 'bg-green-100' : 'bg-gray-100'} rounded-lg p-3 max-w-[80%] whitespace-pre-wrap">
+            ${text}
+        </div>
+    `;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+document.getElementById('chat-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const messageInput = document.getElementById('user-message');
+    const message = messageInput.value.trim();
+    if (!message) return;
+
+    addMessage(message, 'user');
+    messageInput.value = '';
+    
+    try {
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `message=${encodeURIComponent(message)}`
+        });
+        const data = await response.json();
+        addMessage(data.response, 'bot');
+    } catch (error) {
+        addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+    }
+};
+</script>

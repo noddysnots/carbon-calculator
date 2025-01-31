@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Current Scenario</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <!-- Same header as other pages -->
+    <header class="bg-green-600 text-white p-4">
+        <div class="max-w-7xl mx-auto px-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Carbon Footprint Calculator (Sarthak Pant IIML)</h1>
+            <div class="flex items-center space-x-6">
+                <a href="https://www.linkedin.com/in/sarthak-pant-2458b3142/" 
+                   target="_blank" 
+                   class="flex items-center hover:text-gray-200 transition-colors">
+                    <i class="ri-linkedin-box-fill text-2xl mr-2"></i>
+                    <span>Connect on LinkedIn</span>
+                </a>
+                <nav class="flex space-x-4">
+                    <a href="/" class="flex items-center hover:text-gray-200">
+                        <i class="ri-home-line mr-1"></i>Home
+                    </a>
+                    <a href="/scope_emissions" class="flex items-center hover:text-gray-200">
+                        <i class="ri-bubble-chart-line mr-1"></i>Scope Emissions
+                    </a>
+                    <a href="/current_scenario" class="flex items-center hover:text-gray-200">
+                        <i class="ri-earth-line mr-1"></i>Current Scenario
+                    </a>
+                    <a href="/calculator" class="flex items-center hover:text-gray-200">
+                        <i class="ri-calculator-line mr-1"></i>Calculator
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+    
+    <main class="max-w-6xl mx-auto py-10 px-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Top Emitters -->
+            <div class="bg-white p-6 rounded-lg shadow-lg" data-aos="fade-right">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="ri-bar-chart-fill text-red-500 mr-2"></i>
+                    Top 5 GHG Emitting Countries
+                </h2>
+                <div id="top-emitters" class="h-80"></div>
+            </div>
+
+            <!-- Net Zero Goals -->
+            <div class="bg-white p-6 rounded-lg shadow-lg" data-aos="fade-left">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="ri-calendar-check-line text-green-500 mr-2"></i>
+                    Net Zero Target Years
+                </h2>
+                <div id="net-zero" class="h-80"></div>
+            </div>
+
+            <!-- Temperature Rise -->
+            <div class="bg-white p-6 rounded-lg shadow-lg" data-aos="fade-right">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="ri-temp-hot-line text-yellow-500 mr-2"></i>
+                    Global Temperature Rise
+                </h2>
+                <div id="temp-rise" class="h-80"></div>
+                <div class="mt-4 text-sm text-gray-600">
+                    <ul class="list-disc pl-5">
+                        <li>Current: ~1.1°C above pre-industrial levels</li>
+                        <li>Paris Agreement target: 1.5°C</li>
+                        <li>Current trajectory: ~2.7°C by 2100</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- NDC Commitments -->
+            <div class="bg-white p-6 rounded-lg shadow-lg" data-aos="fade-left">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="ri-government-line text-blue-500 mr-2"></i>
+                    NDC Emission Reduction Targets
+                </h2>
+                <div id="ndc-chart" class="h-80"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script>
+        AOS.init();
+        
+        // Initialize charts
+        const emittersChart = echarts.init(document.getElementById('top-emitters'));
+        const netZeroChart = echarts.init(document.getElementById('net-zero'));
+        const tempRiseChart = echarts.init(document.getElementById('temp-rise'));
+        const ndcChart = echarts.init(document.getElementById('ndc-chart'));
+
+        // Top Emitters Chart
+        emittersChart.setOption({
+            tooltip: { trigger: 'item' },
+            legend: { orient: 'vertical', left: 'left' },
+            series: [{
+                type: 'pie',
+                radius: '70%',
+                data: [
+                    { name: 'China', value: 11680, itemStyle: { color: '#f87171' }},
+                    { name: 'USA', value: 4850, itemStyle: { color: '#60a5fa' }},
+                    { name: 'India', value: 2670, itemStyle: { color: '#fbbf24' }},
+                    { name: 'EU', value: 2420, itemStyle: { color: '#34d399' }},
+                    { name: 'Japan', value: 1060, itemStyle: { color: '#a78bfa' }}
+                ],
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }]
+        });
+
+        // Net Zero Goals Chart
+        netZeroChart.setOption({
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: ['China', 'USA', 'EU', 'India', 'Japan'] },
+            yAxis: { type: 'value', name: 'Target Year', min: 2040, max: 2080 },
+            series: [{
+                data: [2060, 2050, 2050, 2070, 2050],
+                type: 'bar',
+                itemStyle: {
+                    color: function(params) {
+                        const colors = ['#f87171', '#60a5fa', '#34d399', '#fbbf24', '#a78bfa'];
+                        return colors[params.dataIndex];
+                    }
+                }
+            }]
+        });
+
+        // Temperature Rise Chart
+        tempRiseChart.setOption({
+            series: [{
+                type: 'gauge',
+                min: 0,
+                max: 3,
+                splitNumber: 6,
+                axisLine: {
+                    lineStyle: {
+                        width: 30,
+                        color: [
+                            [0.5, '#34d399'],  // Green up to 1.5°C
+                            [0.7, '#fbbf24'],  // Yellow up to 2°C
+                            [1, '#f87171']     // Red above 2°C
+                        ]
+                    }
+                },
+                pointer: {
+                    itemStyle: {
+                        color: 'auto'
+                    }
+                },
+                axisTick: {
+                    distance: -30,
+                    length: 8,
+                    lineStyle: {
+                        color: '#fff',
+                        width: 2
+                    }
+                },
+                splitLine: {
+                    distance: -30,
+                    length: 30,
+                    lineStyle: {
+                        color: '#fff',
+                        width: 4
+                    }
+                },
+                axisLabel: {
+                    color: 'inherit',
+                    distance: 40,
+                    fontSize: 12
+                },
+                detail: {
+                    valueAnimation: true,
+                    formatter: '{value}°C',
+                    color: 'inherit'
+                },
+                data: [{
+                    value: 1.1,
+                    name: 'Current'
+                }]
+            }]
+        });
+
+        // NDC Chart
+        ndcChart.setOption({
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: ['USA', 'EU', 'China', 'Japan', 'Canada'] },
+            yAxis: { type: 'value', name: 'Reduction %' },
+            series: [{
+                type: 'bar',
+                data: [50, 55, 65, 46, 40],
+                itemStyle: {
+                    color: function(params) {
+                        const colors = ['#60a5fa', '#34d399', '#f87171', '#a78bfa', '#fbbf24'];
+                        return colors[params.dataIndex];
+                    }
+                }
+            }]
+        });
+
+        // Make charts responsive
+        window.addEventListener('resize', function() {
+            emittersChart.resize();
+            netZeroChart.resize();
+            tempRiseChart.resize();
+            ndcChart.resize();
+        });
+    </script>
+</body>
+</html>
