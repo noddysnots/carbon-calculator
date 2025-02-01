@@ -5,9 +5,7 @@ import json
 import torch
 
 from flask import Flask, render_template, request, jsonify, session
-
-# Optional: remove if you're not using the chatbot
-from transformers import pipeline, Conversation
+from transformers import pipeline
 
 app = Flask(__name__)
 app.secret_key = "your-secret-key"
@@ -35,11 +33,13 @@ SUSTAINABILITY_NEWS = [
 ]
 
 # ---------------------
-# 2) Chatbot (Optional)
+# 2) Chatbot with DeepSeek R1
 # ---------------------
+# text-generation pipeline with trust_remote_code for DeepSeek R1
 chat_model = pipeline(
-    "conversational",
-    model="microsoft/DialoGPT-medium",
+    "text-generation",
+    model="deepseek-ai/DeepSeek-R1",
+    trust_remote_code=True,
     device=0 if torch.cuda.is_available() else -1
 )
 
@@ -51,38 +51,45 @@ def get_session_id():
     return session["session_id"]
 
 def parse_and_calculate_carbon(user_text: str) -> str:
+    """
+    Example parser for carbon-related statements.
+    E.g., "drive car 10 km" => returns approximate CO2 emission
+    """
     text = user_text.lower()
+
     # Example: "drive my car for 10 km"
     car_match = re.search(r"drive\s.*?(\d+)\s?(km|kilometers?)", text)
     if car_match:
         dist = float(car_match.group(1))
-        co2 = dist * 0.2
+        co2 = dist * 0.2  # ~0.2 kg CO2 per km
         return f"Driving {dist} km emits about {co2:.2f} kg CO₂e."
-    # etc. for phone charging, meat consumption...
+
+    # Additional patterns: phone charging, meat consumption, etc.
     return ""
 
 @app.route("/chat", methods=["GET", "POST"])
 def chat():
     if request.method == "POST":
         user_message = request.form.get("message", "").strip()
+
         session_id = get_session_id()
         if session_id not in USER_SESSIONS:
             USER_SESSIONS[session_id] = {"carbon_total": 0.0}
 
-        # attempt parse
+        # Attempt parse for carbon activity
         carbon_reply = parse_and_calculate_carbon(user_message)
         if carbon_reply:
             return jsonify({"response": carbon_reply})
 
-        # fallback
-        conv = Conversation(user_message)
-        response_model = chat_model(conv)
-        if response_model and response_model.generated_responses:
-            final_reply = response_model.generated_responses[-1]
-        else:
-            final_reply = "I'm not sure how to respond."
-        return jsonify({"response": final_reply})
+        # Fallback to DeepSeek R1 text-generation
+        # Customize generation params as needed (max_length, temperature, etc.)
+        generated = chat_model(user_message, max_length=100, num_return_sequences=1)
+        # The pipeline returns a list of dicts with "generated_text"
+        reply = generated[0]["generated_text"]
 
+        return jsonify({"response": reply})
+
+    # If GET, just show a simple chat page or redirect
     return render_template("chat.html")
 
 # ---------------------
@@ -92,7 +99,7 @@ def chat():
 def get_news():
     """
     Returns local list of sustainability news as JSON.
-    You could also fetch from an external API if desired.
+    Could fetch from an external API if desired.
     """
     return jsonify(SUSTAINABILITY_NEWS)
 
@@ -101,11 +108,9 @@ def get_news():
 # ---------------------
 @app.route("/")
 def index():
-    # Increment the global visitor count each time the homepage is accessed.
     global VISITOR_COUNT
     VISITOR_COUNT += 1
 
-    # We pass the current visitor count & total footprint to the template
     return render_template(
         "index.html", 
         visitor_count=VISITOR_COUNT,
@@ -149,6 +154,7 @@ def calculator():
             second_hand = request.form.get('second_hand')
             vacation_frequency = request.form.get('vacation_frequency')
 
+            # Example factor dictionaries
             factors = {
                 'home_type': {
                     'apartment_small': 0.7,
@@ -195,6 +201,7 @@ def calculator():
                 }
             }
 
+            # Basic calculations
             home_emissions = factors['home_type'][home_type] * factors['electricity'][electricity_bill]
 
             if has_vehicle == 'yes':
@@ -211,7 +218,11 @@ def calculator():
                 base_waste *= 0.8
             waste_emissions = base_waste
 
-            total_emissions = home_emissions + transport_emissions + flight_emissions + food_emissions + waste_emissions
+            total_emissions = (
+                home_emissions + transport_emissions +
+                flight_emissions + food_emissions +
+                waste_emissions
+            )
 
             # Qualitative multipliers
             if renewable_usage == 'partial':
@@ -254,6 +265,7 @@ def calculator():
             elif second_hand == 'sometimes':
                 total_emissions *= 0.98
 
+            # Round final
             total_emissions = round(total_emissions, 2)
 
             # Trees needed per day
