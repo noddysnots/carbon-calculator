@@ -40,7 +40,7 @@ except Exception as e:
 
 try:
     # Initialize DeepSeek-R1 model for carbon footprint queries
-    # Using the verified identifier "deepseek-ai/DeepSeek-R1" and trusting remote code.
+    # Using the verified identifier "deepseek-ai/DeepSeek-R1" with trust_remote_code=True.
     carbon_model = pipeline(
         "text-generation",
         model="deepseek-ai/DeepSeek-R1",
@@ -69,7 +69,6 @@ def parse_and_calculate_carbon(user_text: str) -> str:
         dist = float(car_match.group(1))
         co2 = dist * 0.2  # Example conversion: 0.2 kg CO₂e per km
         return f"Driving {dist} km emits about {co2:.2f} kg CO₂e."
-    # (Add more rule-based parsing here as needed.)
     return ""
 
 def is_carbon_query(text: str) -> bool:
@@ -183,7 +182,6 @@ def current_scenario():
 def calculator():
     if request.method == "POST":
         try:
-            # (Your calculator logic remains unchanged.)
             home_type = request.form.get('home_type')
             electricity_bill = request.form.get('electricity_bill')
             renewable_usage = request.form.get('renewable_usage')
