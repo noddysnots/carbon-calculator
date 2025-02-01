@@ -7,9 +7,33 @@
    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+   <style>
+     /* We define 3 background gradient styles for low, medium, high emissions. */
+     .low-bg {
+       background: linear-gradient(120deg, #a8e063, #56ab2f);
+       color: #ffffff;
+     }
+     .medium-bg {
+       background: linear-gradient(120deg, #fddb92, #d1fdca);
+       color: #333333;
+     }
+     .high-bg {
+       background: linear-gradient(120deg, #f953c6, #b91d73);
+       color: #ffffff;
+     }
+   </style>
 </head>
-<body class="bg-gray-100">
-   <header class="bg-green-600 text-white p-4">
+<body class="
+  {% if data.emission_level == 'low' %}
+    low-bg
+  {% elif data.emission_level == 'medium' %}
+    medium-bg
+  {% else %}
+    high-bg
+  {% endif %}
+">
+   <header class="bg-green-600 bg-opacity-90 text-white p-4">
        <nav class="flex justify-between">
            <div><a href="/" class="text-lg font-bold hover:underline">Home</a></div>
            <div class="space-x-4">
@@ -21,21 +45,28 @@
    </header>
    
    <main class="max-w-4xl mx-auto py-10">
-       <div class="bg-white rounded-lg shadow p-6" data-aos="fade-up">
-           <h1 class="text-3xl font-bold text-gray-800 mb-4">Your Carbon Footprint Results</h1>
+       <div class="bg-white bg-opacity-80 rounded-lg shadow p-6" data-aos="fade-up">
+           <h1 class="text-3xl font-bold mb-4">Your Carbon Footprint Results</h1>
            
-           <div class="text-2xl text-gray-700 mb-6">
+           <!-- Show total emissions in text -->
+           <div class="text-2xl mb-4">
                Total Emissions: 
-               <span class="font-bold {{ 'text-red-600' if data['total_emissions'] > 10000 else 'text-yellow-600' if data['total_emissions'] > 5000 else 'text-green-600' }}">
-                   {{ data['total_emissions'] }} kg CO₂/year
+               <span class="font-bold">
+                 {{ data.total_emissions }} kg CO₂/year
                </span>
            </div>
+
+           <!-- Trees needed offset line -->
+           <div class="mb-6 text-xl">
+             Trees needed to offset (approx): 
+             <span class="font-semibold">{{ data.trees_needed }}</span>
+           </div>
            
-           <!-- Main Emissions Chart -->
-           <div id="emissions-chart" class="w-full h-96" data-aos="zoom-in"></div>
+           <!-- Emissions Chart -->
+           <div id="emissions-chart" class="w-full h-96 bg-gray-100 rounded mb-8" data-aos="zoom-in"></div>
 
            <!-- Scope Emissions Chart -->
-           <div id="scope-chart" class="w-full h-96 mt-8" data-aos="zoom-in"></div>
+           <div id="scope-chart" class="w-full h-96 bg-gray-100 rounded" data-aos="zoom-in"></div>
 
            <!-- Suggestions Section -->
            <div class="mt-8 space-y-4">
@@ -45,7 +76,7 @@
                        <h4 class="font-bold text-green-600 flex items-center">
                            <i class="ri-home-line mr-2"></i>Home
                        </h4>
-                       <ul class="mt-2 space-y-1">
+                       <ul class="mt-2 space-y-1 text-gray-700">
                            <li>• Install LED bulbs and smart thermostats</li>
                            <li>• Improve home insulation</li>
                            <li>• Use energy-efficient appliances</li>
@@ -55,7 +86,7 @@
                        <h4 class="font-bold text-blue-600 flex items-center">
                            <i class="ri-car-line mr-2"></i>Transport
                        </h4>
-                       <ul class="mt-2 space-y-1">
+                       <ul class="mt-2 space-y-1 text-gray-700">
                            <li>• Use public transportation when possible</li>
                            <li>• Consider carpooling or biking</li>
                            <li>• Maintain vehicle efficiency</li>
@@ -65,7 +96,7 @@
                        <h4 class="font-bold text-pink-600 flex items-center">
                            <i class="ri-flight-takeoff-line mr-2"></i>Flights
                        </h4>
-                       <ul class="mt-2 space-y-1">
+                       <ul class="mt-2 space-y-1 text-gray-700">
                            <li>• Combine trips when possible</li>
                            <li>• Choose direct flights</li>
                            <li>• Consider video conferencing</li>
@@ -75,7 +106,7 @@
                        <h4 class="font-bold text-yellow-600 flex items-center">
                            <i class="ri-restaurant-line mr-2"></i>Food
                        </h4>
-                       <ul class="mt-2 space-y-1">
+                       <ul class="mt-2 space-y-1 text-gray-700">
                            <li>• Reduce meat consumption</li>
                            <li>• Buy local produce</li>
                            <li>• Minimize food waste</li>
@@ -85,7 +116,7 @@
                        <h4 class="font-bold text-purple-600 flex items-center">
                            <i class="ri-recycle-line mr-2"></i>Waste
                        </h4>
-                       <ul class="mt-2 space-y-1">
+                       <ul class="mt-2 space-y-1 text-gray-700">
                            <li>• Increase recycling</li>
                            <li>• Compost organic waste</li>
                            <li>• Choose products with less packaging</li>
@@ -103,11 +134,12 @@
            once: true
        });
 
+       // Data from server
        const data = {{ data|tojson|safe }};
-       
-       // Main emissions chart configuration
-       const chart = echarts.init(document.getElementById('emissions-chart'));
-       const option = {
+
+       // Pie chart for emissions breakdown
+       const mainChart = echarts.init(document.getElementById('emissions-chart'));
+       const mainOption = {
            tooltip: {
                trigger: 'item',
                formatter: '{b}: {c} kg CO₂ ({d}%)'
@@ -115,16 +147,13 @@
            legend: {
                orient: 'vertical',
                left: 'left',
-               textStyle: {
-                   fontSize: 14
-               }
+               textStyle: { fontSize: 14 }
            },
            series: [{
                name: 'Emissions',
                type: 'pie',
                radius: ['40%', '70%'],
                center: ['50%', '50%'],
-               avoidLabelOverlap: true,
                itemStyle: {
                    borderRadius: 10,
                    borderColor: '#fff',
@@ -133,18 +162,6 @@
                label: {
                    show: true,
                    formatter: '{b}: {d}%'
-               },
-               emphasis: {
-                   label: {
-                       show: true,
-                       fontSize: '16',
-                       fontWeight: 'bold'
-                   },
-                   itemStyle: {
-                       shadowBlur: 10,
-                       shadowOffsetX: 0,
-                       shadowColor: 'rgba(0, 0, 0, 0.5)'
-                   }
                },
                data: Object.entries(data.breakdown).map(([name, value]) => ({
                    name,
@@ -161,9 +178,9 @@
                }))
            }]
        };
-       chart.setOption(option);
+       mainChart.setOption(mainOption);
 
-       // Scope emissions chart
+       // Scope chart
        const scopeChart = echarts.init(document.getElementById('scope-chart'));
        const scopeOption = {
            title: { 
@@ -178,15 +195,12 @@
            legend: { 
                orient: 'vertical', 
                left: 'left',
-               textStyle: {
-                   fontSize: 14
-               }
+               textStyle: { fontSize: 14 }
            },
            series: [{
                type: 'pie',
                radius: ['40%', '70%'],
                center: ['50%', '50%'],
-               avoidLabelOverlap: true,
                itemStyle: {
                    borderRadius: 10,
                    borderColor: '#fff',
@@ -196,27 +210,23 @@
                    show: true,
                    formatter: '{b}: {d}%'
                },
-               emphasis: {
-                   label: {
-                       show: true,
-                       fontSize: '16',
-                       fontWeight: 'bold'
-                   }
-               },
                data: [
                    { 
-                       name: 'Scope 1', 
-                       value: data.breakdown['Transport'] + data.breakdown['Waste'], 
+                       name: 'Scope 1',
+                       // For example, let's assume "Transport + Waste" is scope 1
+                       value: data.breakdown.Transport + data.breakdown.Waste,
                        itemStyle: { color: '#3b82f6' }
                    },
                    { 
-                       name: 'Scope 2', 
-                       value: data.breakdown['Home'], 
+                       name: 'Scope 2',
+                       // "Home" might be scope 2 (electricity)
+                       value: data.breakdown.Home,
                        itemStyle: { color: '#10b981' }
                    },
                    { 
-                       name: 'Scope 3', 
-                       value: data.breakdown['Flights'] + data.breakdown['Food'], 
+                       name: 'Scope 3',
+                       // "Flights + Food" might be scope 3
+                       value: data.breakdown.Flights + data.breakdown.Food,
                        itemStyle: { color: '#f59e0b' }
                    }
                ]
@@ -225,8 +235,8 @@
        scopeChart.setOption(scopeOption);
 
        // Make charts responsive
-       window.addEventListener('resize', function() {
-           chart.resize();
+       window.addEventListener('resize', () => {
+           mainChart.resize();
            scopeChart.resize();
        });
    </script>
