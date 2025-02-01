@@ -1,19 +1,18 @@
 import os
 import sys
-import math
 import re
 import uuid
 import json
 import torch
 from flask import Flask, render_template, request, jsonify, session
-from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
+from transformers import pipeline
 
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = "your-secret-key"
 
 # ---------------------
-# 1) GLOBALS
+# GLOBALS
 # ---------------------
 VISITOR_COUNT = 0
 TOTAL_SITE_FOOTPRINT = 0.0
@@ -25,10 +24,10 @@ SUSTAINABILITY_NEWS = [
 ]
 
 # ---------------------
-# 2) Chatbot Setup
+# Chatbot Model Setup
 # ---------------------
 try:
-    # Initialize DialoGPT model (for general conversation)
+    # Initialize DialoGPT for general conversation (using lower temperature for focused responses)
     chat_model = pipeline(
         "text-generation",
         model="microsoft/DialoGPT-small",
@@ -40,10 +39,10 @@ except Exception as e:
     chat_model = None
 
 try:
-    # Initialize DeepSeek-R1 model (for carbon footprint queries)
+    # Initialize DeepSeek-R1 model for carbon footprint queries (using lower temperature)
     carbon_model = pipeline(
         "text-generation",
-        model="DeepSeek-R1",
+        model="DeepSeek-R1",  # Replace with the correct model identifier if needed
         device=0 if torch.cuda.is_available() else -1
     )
     print("Successfully loaded DeepSeek-R1 model")
@@ -60,25 +59,20 @@ def get_session_id():
 
 def parse_and_calculate_carbon(user_text: str) -> str:
     """
-    A simple parser that only detects driving statements.
-    For example: "drive my car for 10 km" -> returns an approximate CO₂ emission.
+    A simple parser to detect patterns (e.g., driving statements) and calculate CO₂ emissions.
     """
     text = user_text.lower()
-
-    # Example: "drive ... 10 km"
     car_match = re.search(r"drive\s.*?(\d+)\s?(km|kilometers?)", text)
     if car_match:
         dist = float(car_match.group(1))
-        co2 = dist * 0.2  # approximately 0.2 kg CO₂ per km
+        co2 = dist * 0.2  # Example conversion: 0.2 kg CO₂e per km
         return f"Driving {dist} km emits about {co2:.2f} kg CO₂e."
-    
-    # (Additional regex patterns for other carbon-related activities can be added here.)
-
+    # (Add more rule-based parsing here as needed.)
     return ""
 
 def is_carbon_query(text: str) -> bool:
     """
-    Check if the user's text likely relates to a carbon footprint query.
+    Returns True if the text likely relates to carbon footprint questions.
     """
     keywords = ["drive", "car", "km", "emission", "carbon", "footprint", "meat", "charger", "phone", "battery", "consumption"]
     return any(keyword in text.lower() for keyword in keywords)
@@ -88,44 +82,41 @@ def chat():
     if request.method == "POST":
         user_message = request.form.get("message", "").strip()
         session_id = get_session_id()
-        
         if session_id not in USER_SESSIONS:
-            USER_SESSIONS[session_id] = {
-                "carbon_total": 0.0,
-                "conversation_history": []
-            }
+            USER_SESSIONS[session_id] = {"carbon_total": 0.0, "conversation_history": []}
 
-        # First, try our simple parser (e.g. for driving statements)
+        # First try the rule-based parser.
         carbon_reply = parse_and_calculate_carbon(user_message)
         if carbon_reply:
             return jsonify({"response": carbon_reply})
 
-        # If the query appears related to carbon issues and the carbon model is available, use it.
+        # If it looks like a carbon query and the DeepSeek-R1 model is available, use it.
         if is_carbon_query(user_message) and carbon_model is not None:
             try:
-                prompt = "Calculate the carbon footprint based on the following information: " + user_message
+                prompt = (
+                    "You are an expert carbon footprint calculator. "
+                    "For the given input, provide a clear, numeric calculation of the carbon footprint (in kg CO₂e) "
+                    "and a brief explanation. Do not include any off-topic commentary. "
+                    "Input: " + user_message
+                )
                 generated = carbon_model(
                     prompt,
                     max_length=150,
                     num_return_sequences=1,
-                    temperature=0.7,
+                    temperature=0.3,  # Lower temperature for more deterministic output
                     pad_token_id=carbon_model.tokenizer.eos_token_id,
                     do_sample=True,
-                    top_k=50,
-                    top_p=0.95
+                    top_k=40,
+                    top_p=0.9
                 )
                 reply = generated[0]["generated_text"]
-                # Remove the prompt from the response if present
                 if reply.startswith(prompt):
                     reply = reply[len(prompt):].strip()
-                USER_SESSIONS[session_id]["conversation_history"].append({
-                    "user": user_message,
-                    "bot": reply
-                })
+                USER_SESSIONS[session_id]["conversation_history"].append({"user": user_message, "bot": reply})
                 return jsonify({"response": reply})
             except Exception as e:
                 print(f"Error generating carbon response: {e}", file=sys.stderr)
-                # If something goes wrong with the carbon model, fall back to DialoGPT.
+                # Fall back to general conversation if needed.
                 pass
 
         # Fallback: use DialoGPT for general conversation.
@@ -136,7 +127,7 @@ def chat():
                 user_message,
                 max_length=100,
                 num_return_sequences=1,
-                temperature=0.9,
+                temperature=0.5,  # Lower temperature for less randomness in general conversation
                 pad_token_id=chat_model.tokenizer.eos_token_id,
                 do_sample=True,
                 top_k=50,
@@ -145,10 +136,7 @@ def chat():
             reply = generated[0]["generated_text"]
             if reply.startswith(user_message):
                 reply = reply[len(user_message):].strip()
-            USER_SESSIONS[session_id]["conversation_history"].append({
-                "user": user_message,
-                "bot": reply
-            })
+            USER_SESSIONS[session_id]["conversation_history"].append({"user": user_message, "bot": reply})
             return jsonify({"response": reply})
         except Exception as e:
             print(f"Error generating response: {e}", file=sys.stderr)
@@ -157,14 +145,14 @@ def chat():
     return render_template("chat.html")
 
 # ---------------------
-# 3) Sustainability News
+# Sustainability News
 # ---------------------
 @app.route("/news")
 def get_news():
     return jsonify(SUSTAINABILITY_NEWS)
 
 # ---------------------
-# 4) Main Pages
+# Main Pages
 # ---------------------
 @app.route("/")
 def index():
@@ -185,12 +173,13 @@ def current_scenario():
     return render_template("current_scenario.html")
 
 # ---------------------
-# 5) Calculator Route
+# Calculator Route
 # ---------------------
 @app.route("/calculator", methods=["GET", "POST"])
 def calculator():
     if request.method == "POST":
         try:
+            # (Your calculator logic remains unchanged.)
             home_type = request.form.get('home_type')
             electricity_bill = request.form.get('electricity_bill')
             renewable_usage = request.form.get('renewable_usage')
@@ -238,7 +227,6 @@ def calculator():
 
             total_emissions = home_emissions + transport_emissions + flight_emissions + food_emissions + waste_emissions
 
-            # Trees needed
             trees_needed_year = total_emissions / 20.0
             trees_needed_day = round(trees_needed_year / 365.0, 2)
 
@@ -260,7 +248,6 @@ def calculator():
 
         except Exception as e:
             return render_template("calculator.html", error=str(e))
-
     return render_template("calculator.html")
 
 if __name__ == "__main__":
