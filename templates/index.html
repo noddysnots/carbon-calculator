@@ -63,7 +63,6 @@
       -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
-
     /* Simple ticker for news (optional) */
     #news-ticker {
       overflow: hidden;
@@ -148,14 +147,24 @@
     </div>
   </div>
 
-  <!-- Total Users Visited -->
+  <!-- Site Stats (Visitors + Total Site Footprint) -->
   <div class="max-w-4xl mx-auto mt-4 px-4">
     <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="100">
-      <h2 class="font-bold text-lg flex items-center">
-        <i class="ri-user-3-line mr-2 text-blue-600"></i>
-        Total Users Visited Our Site:
-        <span id="total-users" class="text-green-600 ml-2">0</span>
+      <h2 class="font-bold text-lg flex items-center text-blue-600 mb-2">
+        <i class="ri-user-3-line mr-2"></i>Site Stats
       </h2>
+      <p class="text-gray-700 mt-2">
+        Total Visitors:
+        <span class="text-green-600 ml-2 font-bold">
+          {{ visitor_count }} <!-- Coming from Flask app.py -->
+        </span>
+      </p>
+      <p class="text-gray-700 mt-1">
+        Total Carbon Footprint (All Users):
+        <span class="text-red-600 ml-2 font-bold">
+          {{ total_site_footprint }} kg CO₂/year
+        </span>
+      </p>
     </div>
   </div>
 
@@ -171,6 +180,17 @@
         <span>New local composting programs reduce waste by 30%... &bull;</span>
         <span>Major airline invests in sustainable aviation fuels... &bull;</span>
       </div>
+    </div>
+  </div>
+
+  <!-- Additional block for clickable news from /news (optional) -->
+  <div class="max-w-4xl mx-auto mt-4 px-4">
+    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="180">
+      <h2 class="font-bold text-lg mb-2 flex items-center text-blue-700">
+        <i class="ri-earth-line mr-2"></i> More Sustainability News
+      </h2>
+      <!-- Container for clickable news items loaded from /news -->
+      <div id="news-list" class="space-y-2"></div>
     </div>
   </div>
 
@@ -224,6 +244,7 @@
           console.error('Canvas element not found');
           return;
         }
+
         renderer = new THREE.WebGLRenderer({ 
           canvas, 
           alpha: true,
@@ -278,6 +299,8 @@
     window.addEventListener('load', () => {
       init3DEarth().catch(console.error);
       initGHGChart();
+      loadSustainabilityNews();  // Fetch /news items for clickable links
+
       window.addEventListener('resize', () => {
         if (chart) chart.resize();
       });
@@ -410,7 +433,6 @@
       const select = document.getElementById("country-select");
       const currencySpan = document.getElementById("selected-currency");
       const selectedCountryCode = select.value;
-
       currencySpan.classList.add('animate-pulse');
       setTimeout(() => {
         if (selectedCountryCode && countryCurrencyMap[selectedCountryCode]) {
@@ -420,7 +442,6 @@
         }
         currencySpan.classList.remove('animate-pulse');
       }, 300);
-
       updateGHGChart(selectedCountryCode);
     }
 
@@ -564,6 +585,27 @@
         sendBtn.click();
       }
     });
+
+    /* ==================== Fetch Additional Sustainability News from /news ==================== */
+    async function loadSustainabilityNews() {
+      try {
+        const res = await fetch("/news");
+        const newsData = await res.json();
+        const newsList = document.getElementById("news-list");
+        newsList.innerHTML = ""; // clear existing
+
+        newsData.forEach(item => {
+          const linkEl = document.createElement("a");
+          linkEl.href = item.link;
+          linkEl.target = "_blank";
+          linkEl.textContent = item.title;
+          linkEl.className = "block text-green-800 hover:underline";
+          newsList.appendChild(linkEl);
+        });
+      } catch (error) {
+        console.error("Error loading sustainability news:", error);
+      }
+    }
   </script>
 </body>
 </html>
