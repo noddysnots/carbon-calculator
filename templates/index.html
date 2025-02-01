@@ -16,24 +16,18 @@
   <script src="https://cdn.jsdelivr.net/npm/echarts-gl/dist/echarts-gl.min.js"></script>
 
   <style>
-    /* 3D Earth background, slightly faded */
-    #earth-bg {
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: -1;
-      opacity: 0.3;
+    /* Reset default margins/padding */
+    html, body {
+      margin: 0;
+      padding: 0;
       width: 100%;
       height: 100%;
-    }
-    html, body {
-      margin: 0; padding: 0;
-      width: 100%; height: 100%;
-      overflow-x: hidden; /* Scroll only vertically */
+      overflow-x: hidden;
     }
     canvas {
       display: block;
-      width: 100%; height: 100%;
+      width: 100%;
+      height: 100%;
     }
     .card-hover {
       transition: all 0.3s ease;
@@ -48,6 +42,12 @@
       -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.2);
     }
+    /* Custom class for the chatbot container with minimal top margin */
+    .chatbot-container {
+      margin: 1rem auto 0 auto;
+      padding: 0 1rem;
+    }
+    /* Chart container styles remain unchanged */
     #ghg-chart-container,
     #ndc-chart-container,
     #scope-chart-container {
@@ -77,10 +77,7 @@
         Carbon Footprint Calculator (Sarthak Pant, IIM L)
       </h1>
       <div class="flex flex-col md:flex-row items-center md:space-x-6">
-        <a href="https://www.linkedin.com/in/sarthak-pant-2458b3142/"
-           target="_blank"
-           class="flex items-center hover:text-gray-200 transition-colors"
-           data-aos="fade-left" data-aos-delay="50">
+        <a href="https://www.linkedin.com/in/sarthak-pant-2458b3142/" target="_blank" class="flex items-center hover:text-gray-200 transition-colors" data-aos="fade-left" data-aos-delay="50">
           <i class="ri-linkedin-box-fill text-2xl mr-2"></i>
           <span>Connect on LinkedIn</span>
         </a>
@@ -102,17 +99,13 @@
     </div>
   </header>
 
-  <!-- 1) Country & Currency Selection -->
+  <!-- 1) Country & Currency Selection (First Image) -->
   <div class="max-w-4xl mx-auto mt-6 px-4">
     <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up">
       <label for="country-select" class="font-bold mb-2 inline-block">
         <i class="ri-global-line mr-2"></i>Select Your Country:
       </label>
-      <select
-        id="country-select"
-        class="border border-gray-300 rounded px-4 py-2 w-full md:w-auto focus:ring-2 focus:ring-green-500 focus:border-transparent"
-        onchange="handleCountryChange()"
-      >
+      <select id="country-select" class="border border-gray-300 rounded px-4 py-2 w-full md:w-auto focus:ring-2 focus:ring-green-500 focus:border-transparent" onchange="handleCountryChange()">
         <option value="">--Choose--</option>
         <option value="US">United States</option>
         <option value="IN">India</option>
@@ -135,50 +128,8 @@
     </div>
   </div>
 
-  <!-- 2) GHG Emissions Pie Chart (country-specific) -->
-  <div class="max-w-4xl mx-auto mt-4 px-4">
-    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="50">
-      <h2 class="font-bold text-xl mb-2 flex items-center">
-        <i class="ri-pie-chart-2-line mr-2 text-purple-600"></i>
-        Country's Current GHG Emissions
-      </h2>
-      <p class="text-sm text-gray-700 mb-4 ml-6">
-        (Displays approximate % share of GHG sources; also shows net-zero target & NDC)
-      </p>
-      <div id="ghg-chart-container"></div>
-    </div>
-  </div>
-
-  <!-- 3) NDC Chart (all countries) -->
-  <div class="max-w-4xl mx-auto mt-4 px-4">
-    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="100">
-      <h2 class="font-bold text-xl mb-2 flex items-center">
-        <i class="ri-pie-chart-fill mr-2 text-blue-600"></i>
-        All Countries NDC
-      </h2>
-      <p class="text-sm text-gray-700 mb-4 ml-6">
-        (Shows emission reduction pledged by 2030)
-      </p>
-      <div id="ndc-chart-container"></div>
-    </div>
-  </div>
-
-  <!-- 4) Scope Emissions Chart (all countries) -->
-  <div class="max-w-4xl mx-auto mt-4 px-4 mb-8">
-    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="150">
-      <h2 class="font-bold text-xl mb-2 flex items-center">
-        <i class="ri-bubble-chart-line mr-2 text-green-600"></i>
-        Scope Emissions by Country
-      </h2>
-      <p class="text-sm text-gray-700 mb-4 ml-6">
-        (Approx. scope 1/2/3 coverage for each country)
-      </p>
-      <div id="scope-chart-container"></div>
-    </div>
-  </div>
-
-  <!-- 5) Chatbot Section (DeepSeek R1 for carbon queries, DialoGPT for general conversation) -->
-  <div class="max-w-4xl mx-auto px-4 mb-8">
+  <!-- 2) Chatbot Section (Moved immediately after first image) -->
+  <div class="chatbot-container max-w-4xl mx-auto px-4">
     <div class="p-6 bg-white rounded-lg shadow-lg" id="chatbot-card">
       <h2 class="text-2xl font-bold mb-4 flex items-center">
         <i class="ri-robot-fill text-3xl text-green-600 mr-3"></i>
@@ -187,28 +138,51 @@
       <p class="text-sm text-gray-600 mb-2">
         Type "start" for a guided flow, or just ask any question! (I now use DeepSeek‑R1 for carbon footprint queries and DialoGPT for other questions.)
       </p>
-      <div
-        id="messages"
-        class="border border-gray-300 p-4 h-64 overflow-y-auto mb-4 bg-gray-50 rounded"
-      >
+      <div id="messages" class="border border-gray-300 p-4 h-64 overflow-y-auto bg-gray-50 rounded">
         <div class="mb-2 text-gray-600">
           <strong>Bot:</strong> Hello! I'm powered by DeepSeek‑R1 for carbon footprint calculations and DialoGPT for general conversation. How can I help?
         </div>
       </div>
       <div class="flex">
-        <input 
-          id="userInput" 
-          type="text" 
-          placeholder="Type your question..."
-          class="flex-1 border border-gray-300 rounded-l px-4 py-2 focus:outline-none" 
-        />
-        <button 
-          id="sendBtn" 
-          class="bg-green-600 text-white px-6 py-2 rounded-r hover:bg-green-700 transition-colors"
-        >
-          Send
-        </button>
+        <input id="userInput" type="text" placeholder="Type your question..." class="flex-1 border border-gray-300 rounded-l px-4 py-2 focus:outline-none" />
+        <button id="sendBtn" class="bg-green-600 text-white px-6 py-2 rounded-r hover:bg-green-700 transition-colors">Send</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 3) GHG Emissions Pie Chart (Second Image) -->
+  <div class="max-w-4xl mx-auto mt-4 px-4">
+    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="50">
+      <h2 class="font-bold text-xl mb-2 flex items-center">
+        <i class="ri-pie-chart-2-line mr-2 text-purple-600"></i>
+        Country's Current GHG Emissions
+      </h2>
+      <p class="text-sm text-gray-700 mb-4 ml-6">(Displays approximate % share of GHG sources; also shows net-zero target & NDC)</p>
+      <div id="ghg-chart-container"></div>
+    </div>
+  </div>
+
+  <!-- 4) NDC Chart (Third Image) -->
+  <div class="max-w-4xl mx-auto mt-4 px-4">
+    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="100">
+      <h2 class="font-bold text-xl mb-2 flex items-center">
+        <i class="ri-pie-chart-fill mr-2 text-blue-600"></i>
+        All Countries NDC
+      </h2>
+      <p class="text-sm text-gray-700 mb-4 ml-6">(Shows emission reduction pledged by 2030)</p>
+      <div id="ndc-chart-container"></div>
+    </div>
+  </div>
+
+  <!-- 5) Scope Emissions Chart (Fourth Image) -->
+  <div class="max-w-4xl mx-auto mt-4 px-4 mb-8">
+    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="150">
+      <h2 class="font-bold text-xl mb-2 flex items-center">
+        <i class="ri-bubble-chart-line mr-2 text-green-600"></i>
+        Scope Emissions by Country
+      </h2>
+      <p class="text-sm text-gray-700 mb-4 ml-6">(Approx. scope 1/2/3 coverage for each country)</p>
+      <div id="scope-chart-container"></div>
     </div>
   </div>
 
