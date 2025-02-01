@@ -48,37 +48,18 @@ SUSTAINABILITY_NEWS = [
 ]
 
 # ---------------------
-# 2) Chatbot with DeepSeek R1
+# 2) Chatbot Setup
 # ---------------------
 try:
-    # Load model components separately for better error handling
-    config = AutoConfig.from_pretrained(
-        "deepseek-ai/DeepSeek-R1",
-        trust_remote_code=True,
-        cache_dir="/tmp/.cache/huggingface"
-    )
-    
-    tokenizer = AutoTokenizer.from_pretrained(
-        "deepseek-ai/DeepSeek-R1",
-        trust_remote_code=True,
-        cache_dir="/tmp/.cache/huggingface"
-    )
-    
-    model = AutoModelForCausalLM.from_pretrained(
-        "deepseek-ai/DeepSeek-R1",
-        trust_remote_code=True,
-        cache_dir="/tmp/.cache/huggingface",
-        device_map="auto" if torch.cuda.is_available() else None
-    )
-    
+    # Try loading a simpler model that doesn't require flash_attn
     chat_model = pipeline(
         "text-generation",
-        model=model,
-        tokenizer=tokenizer,
+        model="facebook/opt-125m",  # Using a smaller model that doesn't require flash_attn
         device=0 if torch.cuda.is_available() else -1
     )
+    print("Successfully loaded fallback model facebook/opt-125m")
 except Exception as e:
-    print(f"Error loading model: {e}", file=sys.stderr)
+    print(f"Error loading fallback model: {e}", file=sys.stderr)
     chat_model = None
 
 USER_SESSIONS = {}
@@ -121,8 +102,13 @@ def chat():
             return jsonify({"response": carbon_reply})
 
         try:
-            # Generate response from DeepSeek R1
-            generated = chat_model(user_message, max_length=100, num_return_sequences=1)
+            # Generate response
+            generated = chat_model(
+                user_message, 
+                max_length=100, 
+                num_return_sequences=1,
+                pad_token_id=chat_model.tokenizer.eos_token_id
+            )
             reply = generated[0]["generated_text"]
         except Exception as e:
             print(f"Error generating response: {e}", file=sys.stderr)
@@ -132,16 +118,11 @@ def chat():
 
     return render_template("chat.html")
 
-# ---------------------
-# 3) Sustainability News
-# ---------------------
+# Rest of your routes remain the same...
 @app.route("/news")
 def get_news():
     return jsonify(SUSTAINABILITY_NEWS)
 
-# ---------------------
-# 4) Main Pages
-# ---------------------
 @app.route("/")
 def index():
     global VISITOR_COUNT
@@ -160,13 +141,11 @@ def scope_emissions():
 def current_scenario():
     return render_template("current_scenario.html")
 
-# ---------------------
-# 5) Calculator Route
-# ---------------------
 @app.route("/calculator", methods=["GET", "POST"])
 def calculator():
     if request.method == "POST":
         try:
+            # Your existing calculator code...
             home_type = request.form.get('home_type')
             electricity_bill = request.form.get('electricity_bill')
             renewable_usage = request.form.get('renewable_usage')
@@ -214,7 +193,6 @@ def calculator():
 
             total_emissions = home_emissions + transport_emissions + flight_emissions + food_emissions + waste_emissions
 
-            # Trees needed
             trees_needed_year = total_emissions / 20.0
             trees_needed_day = round(trees_needed_year / 365.0, 2)
 
