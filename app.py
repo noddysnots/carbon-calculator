@@ -39,10 +39,12 @@ except Exception as e:
     chat_model = None
 
 try:
-    # Initialize DeepSeek-R1 model for carbon footprint queries (using lower temperature)
+    # Initialize DeepSeek-R1 model for carbon footprint queries
+    # Using the verified identifier "deepseek-ai/DeepSeek-R1" and trusting remote code.
     carbon_model = pipeline(
         "text-generation",
-        model="DeepSeek-R1",  # Replace with the correct model identifier if needed
+        model="deepseek-ai/DeepSeek-R1",
+        trust_remote_code=True,
         device=0 if torch.cuda.is_available() else -1
     )
     print("Successfully loaded DeepSeek-R1 model")
@@ -74,7 +76,10 @@ def is_carbon_query(text: str) -> bool:
     """
     Returns True if the text likely relates to carbon footprint questions.
     """
-    keywords = ["drive", "car", "km", "emission", "carbon", "footprint", "meat", "charger", "phone", "battery", "consumption"]
+    keywords = [
+        "drive", "car", "km", "emission", "carbon", "footprint",
+        "meat", "charger", "phone", "battery", "consumption"
+    ]
     return any(keyword in text.lower() for keyword in keywords)
 
 @app.route("/chat", methods=["GET", "POST"])
@@ -85,7 +90,7 @@ def chat():
         if session_id not in USER_SESSIONS:
             USER_SESSIONS[session_id] = {"carbon_total": 0.0, "conversation_history": []}
 
-        # First try the rule-based parser.
+        # First, try the rule-based parser.
         carbon_reply = parse_and_calculate_carbon(user_message)
         if carbon_reply:
             return jsonify({"response": carbon_reply})
@@ -141,7 +146,6 @@ def chat():
         except Exception as e:
             print(f"Error generating response: {e}", file=sys.stderr)
             return jsonify({"response": "I apologize, but I'm having trouble processing your request. Please try again."})
-
     return render_template("chat.html")
 
 # ---------------------
@@ -245,7 +249,6 @@ def calculator():
                 }
             }
             return render_template("results.html", data=data)
-
         except Exception as e:
             return render_template("calculator.html", error=str(e))
     return render_template("calculator.html")
