@@ -7,32 +7,10 @@
    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-
-   <style>
-     /* We define 3 background gradient styles for low, medium, high emissions. */
-     .low-bg {
-       background: linear-gradient(120deg, #a8e063, #56ab2f);
-       color: #ffffff;
-     }
-     .medium-bg {
-       background: linear-gradient(120deg, #fddb92, #d1fdca);
-       color: #333333;
-     }
-     .high-bg {
-       background: linear-gradient(120deg, #f953c6, #b91d73);
-       color: #ffffff;
-     }
-   </style>
 </head>
-<body class="
-  {% if data.emission_level == 'low' %}
-    low-bg
-  {% elif data.emission_level == 'medium' %}
-    medium-bg
-  {% else %}
-    high-bg
-  {% endif %}
-">
+
+<!-- No more background color classes; just normal gray. -->
+<body class="bg-gray-100">
    <header class="bg-green-600 bg-opacity-90 text-white p-4">
        <nav class="flex justify-between">
            <div><a href="/" class="text-lg font-bold hover:underline">Home</a></div>
@@ -45,7 +23,7 @@
    </header>
    
    <main class="max-w-4xl mx-auto py-10">
-       <div class="bg-white bg-opacity-80 rounded-lg shadow p-6" data-aos="fade-up">
+       <div class="bg-white rounded-lg shadow p-6" data-aos="fade-up">
            <h1 class="text-3xl font-bold mb-4">Your Carbon Footprint Results</h1>
            
            <!-- Show total emissions in text -->
@@ -56,10 +34,10 @@
                </span>
            </div>
 
-           <!-- Trees needed offset line -->
+           <!-- Show trees needed per day -->
            <div class="mb-6 text-xl">
-             Trees needed to offset (approx): 
-             <span class="font-semibold">{{ data.trees_needed }}</span>
+             Trees needed to offset (approx) per day: 
+             <span class="font-semibold">{{ data.trees_needed_day }}/day</span>
            </div>
            
            <!-- Emissions Chart -->
@@ -213,19 +191,19 @@
                data: [
                    { 
                        name: 'Scope 1',
-                       // For example, let's assume "Transport + Waste" is scope 1
+                       // Example assumption: Transport + Waste
                        value: data.breakdown.Transport + data.breakdown.Waste,
                        itemStyle: { color: '#3b82f6' }
                    },
                    { 
                        name: 'Scope 2',
-                       // "Home" might be scope 2 (electricity)
+                       // Example assumption: Home = electricity usage
                        value: data.breakdown.Home,
                        itemStyle: { color: '#10b981' }
                    },
                    { 
                        name: 'Scope 3',
-                       // "Flights + Food" might be scope 3
+                       // Example assumption: Flights + Food
                        value: data.breakdown.Flights + data.breakdown.Food,
                        itemStyle: { color: '#f59e0b' }
                    }
