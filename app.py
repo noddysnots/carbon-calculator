@@ -1,35 +1,12 @@
 import os
 import sys
-
-# Set environment variables before any other imports
-os.environ["HOME"] = "/tmp"
-os.environ["XDG_CACHE_HOME"] = "/tmp/.cache"
-os.environ["XDG_CONFIG_HOME"] = "/tmp/.config"
-os.environ["TRANSFORMERS_CACHE"] = "/tmp/.cache/huggingface"
-os.environ["HF_HOME"] = "/tmp/.cache/huggingface"
-os.environ["HF_MODULES_CACHE"] = "/tmp/.cache/huggingface/modules"
-
-# Create necessary directories with proper permissions
-cache_dirs = [
-    "/tmp/.cache",
-    "/tmp/.config",
-    "/tmp/.cache/huggingface",
-    "/tmp/.cache/huggingface/modules"
-]
-
-for directory in cache_dirs:
-    try:
-        os.makedirs(directory, mode=0o777, exist_ok=True)
-    except Exception as e:
-        print(f"Error creating directory {directory}: {e}", file=sys.stderr)
-
 import math
 import re
 import uuid
 import json
 import torch
 from flask import Flask, render_template, request, jsonify, session
-from transformers import pipeline, AutoConfig, AutoTokenizer, AutoModelForCausalLM
+from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -51,15 +28,15 @@ SUSTAINABILITY_NEWS = [
 # 2) Chatbot Setup
 # ---------------------
 try:
-    # Try loading a simpler model that doesn't require flash_attn
+    # Initialize DialoGPT model
     chat_model = pipeline(
         "text-generation",
-        model="facebook/opt-125m",  # Using a smaller model that doesn't require flash_attn
+        model="microsoft/DialoGPT-small",
         device=0 if torch.cuda.is_available() else -1
     )
-    print("Successfully loaded fallback model facebook/opt-125m")
+    print("Successfully loaded DialoGPT-small model")
 except Exception as e:
-    print(f"Error loading fallback model: {e}", file=sys.stderr)
+    print(f"Error loading model: {e}", file=sys.stderr)
     chat_model = None
 
 USER_SESSIONS = {}
@@ -93,8 +70,12 @@ def chat():
 
         user_message = request.form.get("message", "").strip()
         session_id = get_session_id()
+        
         if session_id not in USER_SESSIONS:
-            USER_SESSIONS[session_id] = {"carbon_total": 0.0}
+            USER_SESSIONS[session_id] = {
+                "carbon_total": 0.0,
+                "conversation_history": []
+            }
 
         # Attempt parse for carbon activity
         carbon_reply = parse_and_calculate_carbon(user_message)
@@ -102,27 +83,47 @@ def chat():
             return jsonify({"response": carbon_reply})
 
         try:
-            # Generate response
+            # Generate response with DialoGPT
             generated = chat_model(
-                user_message, 
-                max_length=100, 
+                user_message,
+                max_length=100,
                 num_return_sequences=1,
-                pad_token_id=chat_model.tokenizer.eos_token_id
+                temperature=0.9,
+                pad_token_id=chat_model.tokenizer.eos_token_id,
+                do_sample=True,
+                top_k=50,
+                top_p=0.95
             )
             reply = generated[0]["generated_text"]
+            
+            # Clean up the response
+            if reply.startswith(user_message):
+                reply = reply[len(user_message):].strip()
+            
+            # Store conversation history
+            USER_SESSIONS[session_id]["conversation_history"].append({
+                "user": user_message,
+                "bot": reply
+            })
+            
+            return jsonify({"response": reply})
+            
         except Exception as e:
             print(f"Error generating response: {e}", file=sys.stderr)
-            reply = "I apologize, but I'm having trouble processing your request. Please try again."
-
-        return jsonify({"response": reply})
+            return jsonify({"response": "I apologize, but I'm having trouble processing your request. Please try again."})
 
     return render_template("chat.html")
 
-# Rest of your routes remain the same...
+# ---------------------
+# 3) Sustainability News
+# ---------------------
 @app.route("/news")
 def get_news():
     return jsonify(SUSTAINABILITY_NEWS)
 
+# ---------------------
+# 4) Main Pages
+# ---------------------
 @app.route("/")
 def index():
     global VISITOR_COUNT
@@ -141,11 +142,13 @@ def scope_emissions():
 def current_scenario():
     return render_template("current_scenario.html")
 
+# ---------------------
+# 5) Calculator Route
+# ---------------------
 @app.route("/calculator", methods=["GET", "POST"])
 def calculator():
     if request.method == "POST":
         try:
-            # Your existing calculator code...
             home_type = request.form.get('home_type')
             electricity_bill = request.form.get('electricity_bill')
             renewable_usage = request.form.get('renewable_usage')
@@ -193,6 +196,7 @@ def calculator():
 
             total_emissions = home_emissions + transport_emissions + flight_emissions + food_emissions + waste_emissions
 
+            # Trees needed
             trees_needed_year = total_emissions / 20.0
             trees_needed_day = round(trees_needed_year / 365.0, 2)
 
