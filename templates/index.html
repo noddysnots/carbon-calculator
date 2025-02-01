@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Carbon Footprint Calculator (Sarthak Pant, IIM L)</title>
   
-  <!-- Tailwind, Remix icons, AOS, Three.js, ECharts, etc. -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
@@ -16,7 +15,6 @@
   <script src="https://cdn.jsdelivr.net/npm/echarts-gl/dist/echarts-gl.min.js"></script>
 
   <style>
-    /* Reset default margins/padding */
     html, body {
       margin: 0;
       padding: 0;
@@ -24,10 +22,22 @@
       min-height: 100%;
       overflow-x: hidden;
     }
-    canvas {
-      display: block;
+    #earth-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      z-index: -1;
+    }
+    #earth-bg {
       width: 100%;
       height: 100%;
+    }
+    #content-wrapper {
+      position: relative;
+      z-index: 1;
+      background: transparent;
     }
     .card-hover {
       transition: all 0.3s ease;
@@ -42,16 +52,13 @@
       -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.2);
     }
-    /* Custom spacing for sections */
     .section {
       margin: 1.5rem auto;
       padding: 0 1rem;
     }
-    /* Chatbot container with reduced top margin */
     .chatbot-container {
       margin-top: 1rem;
     }
-    /* Chart container styles remain unchanged */
     #ghg-chart-container,
     #ndc-chart-container,
     #scope-chart-container {
@@ -72,125 +79,121 @@
   </style>
 </head>
 <body class="bg-gray-100">
-  <canvas id="earth-bg"></canvas>
-
-  <!-- HEADER -->
-  <header class="bg-green-600 bg-opacity-95 text-white p-4 sticky top-0 z-50 shadow-lg">
-    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
-      <h1 class="text-2xl font-bold mb-2 md:mb-0" data-aos="fade-right">
-        Carbon Footprint Calculator (Sarthak Pant, IIM L)
-      </h1>
-      <div class="flex flex-col md:flex-row items-center md:space-x-6">
-        <a href="https://www.linkedin.com/in/sarthak-pant-2458b3142/" target="_blank" class="flex items-center hover:text-gray-200 transition-colors" data-aos="fade-left" data-aos-delay="50">
-          <i class="ri-linkedin-box-fill text-2xl mr-2"></i>
-          <span>Connect on LinkedIn</span>
-        </a>
-        <nav class="flex space-x-4" data-aos="fade-left" data-aos-delay="100">
-          <a href="/" class="flex items-center hover:text-gray-200 hover:scale-105 transform transition-all">
-            <i class="ri-home-line mr-1"></i>Home
-          </a>
-          <a href="/scope_emissions" class="flex items-center hover:text-gray-200 hover:scale-105 transform transition-all">
-            <i class="ri-bubble-chart-line mr-1"></i>Scope Emissions
-          </a>
-          <a href="/current_scenario" class="flex items-center hover:text-gray-200 hover:scale-105 transform transition-all">
-            <i class="ri-earth-line mr-1"></i>Current Scenario
-          </a>
-          <a href="/calculator" class="flex items-center hover:text-gray-200 hover:scale-105 transform transition-all">
-            <i class="ri-calculator-line mr-1"></i>Calculator
-          </a>
-        </nav>
-      </div>
-    </div>
-  </header>
-
-  <!-- Section 1: Country & Currency Selection (First Image) -->
-  <div class="section max-w-4xl mx-auto mt-6 px-4">
-    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up">
-      <label for="country-select" class="font-bold mb-2 inline-block">
-        <i class="ri-global-line mr-2"></i>Select Your Country:
-      </label>
-      <select id="country-select" class="border border-gray-300 rounded px-4 py-2 w-full md:w-auto focus:ring-2 focus:ring-green-500 focus:border-transparent" onchange="handleCountryChange()">
-        <option value="">--Choose--</option>
-        <option value="US">United States</option>
-        <option value="IN">India</option>
-        <option value="GB">United Kingdom</option>
-        <option value="AU">Australia</option>
-        <option value="DE">Germany</option>
-        <option value="CA">Canada</option>
-        <option value="FR">France</option>
-        <option value="BR">Brazil</option>
-        <option value="JP">Japan</option>
-        <option value="ZA">South Africa</option>
-      </select>
-      <div class="mt-4 p-3 bg-green-50 rounded-lg">
-        <p class="flex items-center">
-          <i class="ri-money-dollar-circle-line mr-2 text-green-600"></i>
-          Your selected currency:
-          <span id="selected-currency" class="ml-2 font-semibold text-green-600">N/A</span>
-        </p>
-      </div>
-    </div>
+  <div id="earth-container">
+    <canvas id="earth-bg"></canvas>
   </div>
-
-  <!-- Section 2: Chatbot (Immediately after Section 1) -->
-  <div class="section chatbot-container max-w-4xl mx-auto px-4">
-    <div class="p-6 bg-white rounded-lg shadow-lg" id="chatbot-card" data-aos="fade-up" data-aos-delay="50">
-      <h2 class="text-2xl font-bold mb-4 flex items-center">
-        <i class="ri-robot-fill text-3xl text-green-600 mr-3"></i>
-        Carbon Calculator AI Bot
-      </h2>
-      <p class="text-sm text-gray-600 mb-2">
-        Type "start" for a guided flow, or just ask any question! (I now use DeepSeek‑R1 for carbon footprint queries and DialoGPT for other questions.)
-      </p>
-      <div id="messages" class="border border-gray-300 p-4 h-64 overflow-y-auto bg-gray-50 rounded">
-        <div class="mb-2 text-gray-600">
-          <strong>Bot:</strong> Hello! I'm powered by DeepSeek‑R1 for carbon footprint calculations and DialoGPT for general conversation. How can I help?
+  
+  <div id="content-wrapper">
+    <header class="bg-green-600 bg-opacity-95 text-white p-4 sticky top-0 z-50 shadow-lg">
+      <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+        <h1 class="text-2xl font-bold mb-2 md:mb-0" data-aos="fade-right">
+          Carbon Footprint Calculator (Sarthak Pant, IIM L)
+        </h1>
+        <div class="flex flex-col md:flex-row items-center md:space-x-6">
+          <a href="https://www.linkedin.com/in/sarthak-pant-2458b3142/" target="_blank" class="flex items-center hover:text-gray-200 transition-colors" data-aos="fade-left" data-aos-delay="50">
+            <i class="ri-linkedin-box-fill text-2xl mr-2"></i>
+            <span>Connect on LinkedIn</span>
+          </a>
+          <nav class="flex space-x-4" data-aos="fade-left" data-aos-delay="100">
+            <a href="/" class="flex items-center hover:text-gray-200 hover:scale-105 transform transition-all">
+              <i class="ri-home-line mr-1"></i>Home
+            </a>
+            <a href="/scope_emissions" class="flex items-center hover:text-gray-200 hover:scale-105 transform transition-all">
+              <i class="ri-bubble-chart-line mr-1"></i>Scope Emissions
+            </a>
+            <a href="/current_scenario" class="flex items-center hover:text-gray-200 hover:scale-105 transform transition-all">
+              <i class="ri-earth-line mr-1"></i>Current Scenario
+            </a>
+            <a href="/calculator" class="flex items-center hover:text-gray-200 hover:scale-105 transform transition-all">
+              <i class="ri-calculator-line mr-1"></i>Calculator
+            </a>
+          </nav>
         </div>
       </div>
-      <div class="flex">
-        <input id="userInput" type="text" placeholder="Type your question..." class="flex-1 border border-gray-300 rounded-l px-4 py-2 focus:outline-none" />
-        <button id="sendBtn" class="bg-green-600 text-white px-6 py-2 rounded-r hover:bg-green-700 transition-colors">Send</button>
+    </header>
+
+    <div class="section max-w-4xl mx-auto mt-6 px-4">
+      <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up">
+        <label for="country-select" class="font-bold mb-2 inline-block">
+          <i class="ri-global-line mr-2"></i>Select Your Country:
+        </label>
+        <select id="country-select" class="border border-gray-300 rounded px-4 py-2 w-full md:w-auto focus:ring-2 focus:ring-green-500 focus:border-transparent" onchange="handleCountryChange()">
+          <option value="">--Choose--</option>
+          <option value="US">United States</option>
+          <option value="IN">India</option>
+          <option value="GB">United Kingdom</option>
+          <option value="AU">Australia</option>
+          <option value="DE">Germany</option>
+          <option value="CA">Canada</option>
+          <option value="FR">France</option>
+          <option value="BR">Brazil</option>
+          <option value="JP">Japan</option>
+          <option value="ZA">South Africa</option>
+        </select>
+        <div class="mt-4 p-3 bg-green-50 rounded-lg">
+          <p class="flex items-center">
+            <i class="ri-money-dollar-circle-line mr-2 text-green-600"></i>
+            Your selected currency:
+            <span id="selected-currency" class="ml-2 font-semibold text-green-600">N/A</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section chatbot-container max-w-4xl mx-auto px-4">
+      <div class="p-6 bg-white rounded-lg shadow-lg" id="chatbot-card" data-aos="fade-up" data-aos-delay="50">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <i class="ri-robot-fill text-3xl text-green-600 mr-3"></i>
+          Carbon Calculator AI Bot
+        </h2>
+        <p class="text-sm text-gray-600 mb-2">
+          Type "start" for a guided flow, or just ask any question! (I now use DeepSeek‑R1 for carbon footprint queries and DialoGPT for other questions.)
+        </p>
+        <div id="messages" class="border border-gray-300 p-4 h-64 overflow-y-auto bg-gray-50 rounded">
+          <div class="mb-2 text-gray-600">
+            <strong>Bot:</strong> Hello! I'm powered by DeepSeek‑R1 for carbon footprint calculations and DialoGPT for general conversation. How can I help?
+          </div>
+        </div>
+        <div class="flex">
+          <input id="userInput" type="text" placeholder="Type your question..." class="flex-1 border border-gray-300 rounded-l px-4 py-2 focus:outline-none" />
+          <button id="sendBtn" class="bg-green-600 text-white px-6 py-2 rounded-r hover:bg-green-700 transition-colors">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="section max-w-4xl mx-auto mt-4 px-4">
+      <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="50">
+        <h2 class="font-bold text-xl mb-2 flex items-center">
+          <i class="ri-pie-chart-2-line mr-2 text-purple-600"></i>
+          Country's Current GHG Emissions
+        </h2>
+        <p class="text-sm text-gray-700 mb-4 ml-6">(Displays approximate % share of GHG sources; also shows net-zero target & NDC)</p>
+        <div id="ghg-chart-container"></div>
+      </div>
+    </div>
+
+    <div class="section max-w-4xl mx-auto mt-4 px-4">
+      <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="100">
+        <h2 class="font-bold text-xl mb-2 flex items-center">
+          <i class="ri-pie-chart-fill mr-2 text-blue-600"></i>
+          All Countries NDC
+        </h2>
+        <p class="text-sm text-gray-700 mb-4 ml-6">(Shows emission reduction pledged by 2030)</p>
+        <div id="ndc-chart-container"></div>
+      </div>
+    </div>
+
+    <div class="section max-w-4xl mx-auto mt-4 px-4 mb-8">
+      <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="150">
+        <h2 class="font-bold text-xl mb-2 flex items-center">
+          <i class="ri-bubble-chart-line mr-2 text-green-600"></i>
+          Scope Emissions by Country
+        </h2>
+        <p class="text-sm text-gray-700 mb-4 ml-6">(Approx. scope 1/2/3 coverage for each country)</p>
+        <div id="scope-chart-container"></div>
       </div>
     </div>
   </div>
 
-  <!-- Section 3: GHG Emissions Pie Chart -->
-  <div class="section max-w-4xl mx-auto mt-4 px-4">
-    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="50">
-      <h2 class="font-bold text-xl mb-2 flex items-center">
-        <i class="ri-pie-chart-2-line mr-2 text-purple-600"></i>
-        Country's Current GHG Emissions
-      </h2>
-      <p class="text-sm text-gray-700 mb-4 ml-6">(Displays approximate % share of GHG sources; also shows net-zero target & NDC)</p>
-      <div id="ghg-chart-container"></div>
-    </div>
-  </div>
-
-  <!-- Section 4: NDC Chart -->
-  <div class="section max-w-4xl mx-auto mt-4 px-4">
-    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="100">
-      <h2 class="font-bold text-xl mb-2 flex items-center">
-        <i class="ri-pie-chart-fill mr-2 text-blue-600"></i>
-        All Countries NDC
-      </h2>
-      <p class="text-sm text-gray-700 mb-4 ml-6">(Shows emission reduction pledged by 2030)</p>
-      <div id="ndc-chart-container"></div>
-    </div>
-  </div>
-
-  <!-- Section 5: Scope Emissions Chart -->
-  <div class="section max-w-4xl mx-auto mt-4 px-4 mb-8">
-    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="150">
-      <h2 class="font-bold text-xl mb-2 flex items-center">
-        <i class="ri-bubble-chart-line mr-2 text-green-600"></i>
-        Scope Emissions by Country
-      </h2>
-      <p class="text-sm text-gray-700 mb-4 ml-6">(Approx. scope 1/2/3 coverage for each country)</p>
-      <div id="scope-chart-container"></div>
-    </div>
-  </div>
-
-  <!-- AOS -->
   <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
   <script>
     AOS.init({
@@ -199,10 +202,9 @@
       offset: 100,
       easing: 'ease-in-out'
     });
-    /*******************************************************
-     * 3D Earth
-     *******************************************************/
+
     let renderer, scene, camera, globe, controls;
+    
     async function loadOrbitControls() {
       return new Promise((resolve, reject) => {
         const script = document.createElement('script');
@@ -218,6 +220,7 @@
         document.head.appendChild(script);
       });
     }
+    
     async function init3DEarth() {
       try {
         await loadOrbitControls();
@@ -252,25 +255,26 @@
         console.error('Error initializing 3D globe:', err);
       }
     }
+
     function onWindowResize() {
       if (!camera || !renderer) return;
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
+
     function animate() {
       if (!globe || !renderer || !scene || !camera) return;
       requestAnimationFrame(animate);
       globe.rotation.y += 0.001;
       renderer.render(scene, camera);
     }
-    /*******************************************************
-     * GHG Chart (Country-Specific)
-     *******************************************************/
+
     const countryCurrencyMap = {
-      US: "USD", IN: "INR", GB: "GBP", AU: "AUD", DE: "EUR"
-      , CA: "CAD", FR: "EUR", BR: "BRL", JP: "JPY", ZA: "ZAR"
+      US: "USD", IN: "INR", GB: "GBP", AU: "AUD", DE: "EUR",
+      CA: "CAD", FR: "EUR", BR: "BRL", JP: "JPY", ZA: "ZAR"
     };
+
     const ghgDataByCountry = {
       US: [
         { name: "Energy", value: 35 },
@@ -343,48 +347,46 @@
         { name: "Others", value: 2 }
       ]
     };
+
     const countryInfo = {
-      US: {
-        netZeroTarget: "2050",
-        ndc: "50-52% reduction by 2030 (vs. 2005)"
-      },
-      IN: {
-        netZeroTarget: "2070",
-        ndc: "45% emission intensity reduction by 2030 (vs. 2005)"
-      },
-      GB: {
-        netZeroTarget: "2050",
-        ndc: "At least 68% reduction by 2030 (vs. 1990)"
-      },
-      AU: {
-        netZeroTarget: "2050",
-        ndc: "43% reduction by 2030 (vs. 2005)"
-      },
-      DE: {
-        netZeroTarget: "2045",
-        ndc: "65% reduction by 2030 (vs. 1990)"
-      },
-      CA: {
-        netZeroTarget: "2050",
-        ndc: "40-45% reduction by 2030 (vs. 2005)"
-      },
-      FR: {
-        netZeroTarget: "2050",
-        ndc: "55% reduction by 2030 (vs. 1990)"
-      },
-      BR: {
-        netZeroTarget: "2050",
-        ndc: "50% reduction by 2030 (vs. 2005)"
-      },
-      JP: {
-        netZeroTarget: "2050",
-        ndc: "46% reduction by 2030 (vs. 2013)"
-      },
-      ZA: {
-        netZeroTarget: "2050",
-        ndc: "34% reduction by 2030 (vs. 2015)"
-      }
+      US: { netZeroTarget: "2050", ndc: "50-52% reduction by 2030 (vs. 2005)" },
+      IN: { netZeroTarget: "2070", ndc: "45% emission intensity reduction by 2030 (vs. 2005)" },
+      GB: { netZeroTarget: "2050", ndc: "At least 68% reduction by 2030 (vs. 1990)" },
+      AU: { netZeroTarget: "2050", ndc: "43% reduction by 2030 (vs. 2005)" },
+      DE: { netZeroTarget: "2045", ndc: "65% reduction by 2030 (vs. 1990)" },
+      CA: { netZeroTarget: "2050", ndc: "40-45% reduction by 2030 (vs. 2005)" },
+      FR: { netZeroTarget: "2050", ndc: "55% reduction by 2030 (vs. 1990)" },
+      BR: { netZeroTarget: "2050", ndc: "50% reduction by 2030 (vs. 2005)" },
+      JP: { netZeroTarget: "2050", ndc: "46% reduction by 2030 (vs. 2013)" },
+      ZA: { netZeroTarget: "2050", ndc: "34% reduction by 2030 (vs. 2015)" }
     };
+
+    const ndcAllCountries = [
+      { name: "US", value: 50 },
+      { name: "IN", value: 45 },
+      { name: "GB", value: 68 },
+      { name: "AU", value: 43 },
+      { name: "DE", value: 65 },
+      { name: "CA", value: 40 },
+      { name: "FR", value: 55 },
+      { name: "BR", value: 50 },
+      { name: "JP", value: 46 },
+      { name: "ZA", value: 34 }
+    ];
+
+    const scopeAllCountries = [
+      { name: "US (Scope 1/2/3)", value: 200 },
+      { name: "IN (Scope 1/2/3)", value: 150 },
+      { name: "GB (Scope 1/2/3)", value: 180 },
+      { name: "AU (Scope 1/2/3)", value: 120 },
+      { name: "DE (Scope 1/2/3)", value: 200 },
+      { name: "CA (Scope 1/2/3)", value: 130 },
+      { name: "FR (Scope 1/2/3)", value: 140 },
+      { name: "BR (Scope 1/2/3)", value: 110 },
+      { name: "JP (Scope 1/2/3)", value: 190 },
+      { name: "ZA (Scope 1/2/3)", value: 100 }
+    ];
+
     let ghgChart;
     function initGHGChart() {
       const chartDom = document.getElementById("ghg-chart-container");
@@ -422,6 +424,7 @@
       };
       ghgChart.setOption(option);
     }
+
     function updateGHGChart(countryCode) {
       if (!ghgChart) return;
       const data = ghgDataByCountry[countryCode];
@@ -454,34 +457,7 @@
         series: [{ data: newSeriesData }]
       });
     }
-    function handleCountryChange() {
-      const select = document.getElementById("country-select");
-      const code = select.value;
-      // update currency
-      const currencySpan = document.getElementById("selected-currency");
-      currencySpan.classList.add('animate-pulse');
-      setTimeout(() => {
-        currencySpan.textContent = countryCurrencyMap[code] || "N/A";
-        currencySpan.classList.remove('animate-pulse');
-      }, 300);
-      updateGHGChart(code);
-    }
-    /*******************************************************
-     * NDC Chart (All Countries)
-     *******************************************************/
-    const ndcAllCountries = [
-      { name: "US", value: 50 },
-      { name: "IN", value: 45 },
-      { name: "GB", value: 68 },
-      { name: "AU", value: 43 },
-      { name: "DE", value: 65 },
-      { name: "CA", value: 40 },
-      { name: "FR", value: 55 },
-      { name: "BR", value: 50 },
-      { name: "JP", value: 46 },
-      { name: "ZA", value: 34 }
-    ];
-    let ndcChart;
+
     function initNDCChart() {
       const ndcDom = document.getElementById("ndc-chart-container");
       if (!ndcDom) return;
@@ -499,29 +475,14 @@
           radius: '50%',
           center: ['50%', '50%'],
           data: ndcAllCountries.map(item => ({
-            name: item.name + ` (${item.value}%)`,
+            name: `${item.name} (${item.value}%)`,
             value: item.value
           }))
         }]
       };
       ndcChart.setOption(option);
     }
-    /*******************************************************
-     * Scope Emissions Chart (All Countries)
-     *******************************************************/
-    const scopeAllCountries = [
-      { name: "US (Scope 1/2/3)", value: 200 },
-      { name: "IN (Scope 1/2/3)", value: 150 },
-      { name: "GB (Scope 1/2/3)", value: 180 },
-      { name: "AU (Scope 1/2/3)", value: 120 },
-      { name: "DE (Scope 1/2/3)", value: 200 },
-      { name: "CA (Scope 1/2/3)", value: 130 },
-      { name: "FR (Scope 1/2/3)", value: 140 },
-      { name: "BR (Scope 1/2/3)", value: 110 },
-      { name: "JP (Scope 1/2/3)", value: 190 },
-      { name: "ZA (Scope 1/2/3)", value: 100 }
-    ];
-    let scopeChart;
+
     function initScopeChart() {
       const scopeDom = document.getElementById("scope-chart-container");
       if (!scopeDom) return;
@@ -543,57 +504,25 @@
       };
       scopeChart.setOption(option);
     }
-    /*******************************************************
-     * Chatbot (DeepSeek R1 for carbon queries, DialoGPT fallback)
-     *******************************************************/
-    const messagesDiv = document.getElementById("messages");
-    const userInput = document.getElementById("userInput");
-    const sendBtn = document.getElementById("sendBtn");
-    sendBtn.addEventListener("click", async () => {
-      const text = userInput.value.trim();
-      if (!text) return;
-      // Display user message
-      const userMsgDiv = document.createElement("div");
-      userMsgDiv.className = "mb-2 text-blue-800";
-      userMsgDiv.innerHTML = `<strong>You:</strong> ${text}`;
-      messagesDiv.appendChild(userMsgDiv);
-      // Send to server route "/chat"
-      try {
-        const response = await fetch("/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "message=" + encodeURIComponent(text)
-        });
-        const data = await response.json();
-        const botMsgDiv = document.createElement("div");
-        botMsgDiv.className = "mb-2 text-green-700";
-        botMsgDiv.innerHTML = `<strong>Bot:</strong> ${data.response}`;
-        messagesDiv.appendChild(botMsgDiv);
-      } catch (err) {
-        console.error("Chat error:", err);
-      }
-      // Clear input
-      userInput.value = "";
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    });
-    userInput.addEventListener("keyup", (e) => {
-      if (e.key === "Enter") {
-        sendBtn.click();
-      }
-    });
-    /*******************************************************
-     * Window Onload
-     *******************************************************/
+
+    function handleCountryChange() {
+      const select = document.getElementById("country-select");
+      const code = select.value;
+      const currencySpan = document.getElementById("selected-currency");
+      currencySpan.classList.add('animate-pulse');
+      setTimeout(() => {
+        currencySpan.textContent = countryCurrencyMap[code] || "N/A";
+        currencySpan.classList.remove('animate-pulse');
+      }, 300);
+      updateGHGChart(code);
+    }
+
     window.addEventListener('load', () => {
-      // 3D Earth
       init3DEarth().catch(console.error);
-      // Country-specific GHG chart
       initGHGChart();
-      // NDC chart (all countries)
       initNDCChart();
-      // Scope chart (all countries)
       initScopeChart();
-      // Resize handling
+      
       window.addEventListener('resize', () => {
         if (ghgChart) ghgChart.resize();
         if (ndcChart) ndcChart.resize();
