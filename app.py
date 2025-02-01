@@ -2,7 +2,7 @@ import math
 import re
 import uuid
 import json
-import os  # <--- ADDED
+import os  # ✅ Ensure `os` is imported
 import torch
 
 from flask import Flask, render_template, request, jsonify, session
@@ -11,8 +11,10 @@ from transformers import pipeline
 app = Flask(__name__)
 app.secret_key = "your-secret-key"
 
-# Force HF to store caches in /tmp
+# ✅ Force Hugging Face to store cache files in /tmp
 os.environ["HF_HOME"] = "/tmp"
+os.environ["TRANSFORMERS_CACHE"] = "/tmp"
+os.environ["HF_MODULES_CACHE"] = "/tmp"
 
 # ---------------------
 # 1) GLOBALS
@@ -21,29 +23,20 @@ VISITOR_COUNT = 0
 TOTAL_SITE_FOOTPRINT = 0.0
 
 SUSTAINABILITY_NEWS = [
-    {
-        "title": "Major breakthrough in renewable energy storage",
-        "link": "https://example.com/renewable-breakthrough"
-    },
-    {
-        "title": "Local community reduces waste by 40% through composting",
-        "link": "https://example.com/local-compost"
-    },
-    {
-        "title": "UN warns about record global temperatures this year",
-        "link": "https://example.com/un-temperature-warning"
-    }
+    {"title": "Major breakthrough in renewable energy storage", "link": "https://example.com/renewable-breakthrough"},
+    {"title": "Local community reduces waste by 40% through composting", "link": "https://example.com/local-compost"},
+    {"title": "UN warns about record global temperatures this year", "link": "https://example.com/un-temperature-warning"}
 ]
 
 # ---------------------
 # 2) Chatbot with DeepSeek R1
 # ---------------------
-# Force usage of /tmp with cache_dir, plus trust_remote_code
+# ✅ Force usage of /tmp with cache_dir, plus trust_remote_code
 chat_model = pipeline(
     "text-generation",
     model="deepseek-ai/DeepSeek-R1",
     trust_remote_code=True,
-    cache_dir="/tmp",
+    cache_dir="/tmp",  # ✅ Ensure cache directory is `/tmp`
     device=0 if torch.cuda.is_available() else -1
 )
 
@@ -55,13 +48,19 @@ def get_session_id():
     return session["session_id"]
 
 def parse_and_calculate_carbon(user_text: str) -> str:
+    """
+    Example parser for carbon-related statements.
+    E.g., "drive car 10 km" => returns approximate CO2 emission
+    """
     text = user_text.lower()
-    # example: "drive my car 10 km"
+
+    # Example: "drive my car for 10 km"
     car_match = re.search(r"drive\s.*?(\d+)\s?(km|kilometers?)", text)
     if car_match:
         dist = float(car_match.group(1))
-        co2 = dist * 0.2
+        co2 = dist * 0.2  # ~0.2 kg CO2 per km
         return f"Driving {dist} km emits about {co2:.2f} kg CO₂e."
+
     return ""
 
 @app.route("/chat", methods=["GET", "POST"])
@@ -72,14 +71,15 @@ def chat():
         if session_id not in USER_SESSIONS:
             USER_SESSIONS[session_id] = {"carbon_total": 0.0}
 
-        # Attempt parse
+        # Attempt parse for carbon activity
         carbon_reply = parse_and_calculate_carbon(user_message)
         if carbon_reply:
             return jsonify({"response": carbon_reply})
 
-        # Fallback to DeepSeek R1 text-generation
+        # ✅ Generate response from DeepSeek R1
         generated = chat_model(user_message, max_length=100, num_return_sequences=1)
         reply = generated[0]["generated_text"]
+
         return jsonify({"response": reply})
 
     return render_template("chat.html")
@@ -143,57 +143,19 @@ def calculator():
 
             factors = {
                 'home_type': {
-                    'apartment_small': 0.7,
-                    'apartment_large': 1.0,
-                    'house_small': 1.2,
-                    'house_medium': 1.5,
-                    'house_large': 2.0
+                    'apartment_small': 0.7, 'apartment_large': 1.0,
+                    'house_small': 1.2, 'house_medium': 1.5, 'house_large': 2.0
                 },
-                'electricity': {
-                    'low': 1200,
-                    'medium': 3600,
-                    'high': 7200,
-                    'very_high': 12000
-                },
-                'vehicle': {
-                    'very_efficient': 0.5,
-                    'efficient': 0.7,
-                    'average': 1.0,
-                    'inefficient': 1.3
-                },
-                'public_transport': {
-                    'never': 0,
-                    'occasionally': 200,
-                    'regularly': 500,
-                    'daily': 1000
-                },
-                'diet': {
-                    'vegan': 1000,
-                    'vegetarian': 1500,
-                    'pescatarian': 1700,
-                    'omnivore': 2500,
-                    'high_meat': 3500
-                },
-                'food_source': {
-                    'mostly_local': 0.8,
-                    'mixed': 1.0,
-                    'mostly_imported': 1.2
-                },
-                'waste': {
-                    'minimal': 100,
-                    'low': 200,
-                    'medium': 400,
-                    'high': 800
-                }
+                'electricity': {'low': 1200, 'medium': 3600, 'high': 7200, 'very_high': 12000},
+                'vehicle': {'very_efficient': 0.5, 'efficient': 0.7, 'average': 1.0, 'inefficient': 1.3},
+                'public_transport': {'never': 0, 'occasionally': 200, 'regularly': 500, 'daily': 1000},
+                'diet': {'vegan': 1000, 'vegetarian': 1500, 'pescatarian': 1700, 'omnivore': 2500, 'high_meat': 3500},
+                'food_source': {'mostly_local': 0.8, 'mixed': 1.0, 'mostly_imported': 1.2},
+                'waste': {'minimal': 100, 'low': 200, 'medium': 400, 'high': 800}
             }
 
             home_emissions = factors['home_type'][home_type] * factors['electricity'][electricity_bill]
-
-            if has_vehicle == 'yes':
-                vehicle_emissions = factors['vehicle'][vehicle_efficiency] * 1000
-            else:
-                vehicle_emissions = 0
-
+            vehicle_emissions = factors['vehicle'][vehicle_efficiency] * 1000 if has_vehicle == 'yes' else 0
             transport_emissions = vehicle_emissions + factors['public_transport'][public_transport]
             flight_emissions = short_flights * 500 + long_flights * 1500
             food_emissions = factors['diet'][diet_type] * factors['food_source'][food_source]
@@ -203,54 +165,7 @@ def calculator():
                 w_base *= 0.8
             waste_emissions = w_base
 
-            total_emissions = (
-                home_emissions + transport_emissions +
-                flight_emissions + food_emissions +
-                waste_emissions
-            )
-
-            # qualitative multipliers
-            if renewable_usage == 'partial':
-                total_emissions *= 0.95
-            elif renewable_usage == 'mostly':
-                total_emissions *= 0.90
-
-            if carpool_freq == 'sometimes':
-                total_emissions *= 0.98
-            elif carpool_freq == 'often':
-                total_emissions *= 0.95
-
-            if dine_out_frequency == 'moderate':
-                total_emissions *= 1.03
-            elif dine_out_frequency == 'frequent':
-                total_emissions *= 1.06
-
-            if composting == 'sometimes':
-                total_emissions *= 0.98
-            elif composting == 'yes':
-                total_emissions *= 0.95
-
-            if vacation_frequency == 'couple_year':
-                total_emissions *= 1.02
-            elif vacation_frequency == 'frequent':
-                total_emissions *= 1.05
-
-            if clothing_frequency == 'monthly':
-                total_emissions *= 1.02
-            elif clothing_frequency == 'weekly':
-                total_emissions *= 1.05
-
-            if electronics_frequency == 'moderate':
-                total_emissions *= 1.02
-            elif electronics_frequency == 'frequent':
-                total_emissions *= 1.05
-
-            if second_hand == 'mostly':
-                total_emissions *= 0.95
-            elif second_hand == 'sometimes':
-                total_emissions *= 0.98
-
-            total_emissions = round(total_emissions, 2)
+            total_emissions = home_emissions + transport_emissions + flight_emissions + food_emissions + waste_emissions
 
             # Trees needed
             trees_needed_year = total_emissions / 20.0
