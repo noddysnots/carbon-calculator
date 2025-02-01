@@ -177,20 +177,22 @@
     </div>
   </div>
 
-  <!-- 5) Chatbot Section (GPT-2 or deepseek R1) -->
+  <!-- 5) Chatbot Section (DeepSeek R1 for carbon queries, DialoGPT for general conversation) -->
   <div class="max-w-4xl mx-auto px-4 mb-8">
     <div class="p-6 bg-white rounded-lg shadow-lg" id="chatbot-card">
       <h2 class="text-2xl font-bold mb-4 flex items-center">
         <i class="ri-robot-fill text-3xl text-green-600 mr-3"></i>
         Carbon Calculator AI Bot
       </h2>
-      <p class="text-sm text-gray-600 mb-2">Type "start" for a guided flow, or just ask any question!</p>
+      <p class="text-sm text-gray-600 mb-2">
+        Type "start" for a guided flow, or just ask any question! (I now use DeepSeek‑R1 for carbon footprint queries and DialoGPT for other questions.)
+      </p>
       <div
         id="messages"
         class="border border-gray-300 p-4 h-64 overflow-y-auto mb-4 bg-gray-50 rounded"
       >
         <div class="mb-2 text-gray-600">
-          <strong>Bot:</strong> Hello! I'm powered by GPT-2 (or deepseek R1). How can I help?
+          <strong>Bot:</strong> Hello! I'm powered by DeepSeek‑R1 for carbon footprint calculations and DialoGPT for general conversation. How can I help?
         </div>
       </div>
       <div class="flex">
@@ -219,7 +221,6 @@
       offset: 100,
       easing: 'ease-in-out'
     });
-
     /*******************************************************
      * 3D Earth
      *******************************************************/
@@ -254,24 +255,19 @@
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 0, 220);
-
         const ambientLight = new THREE.AmbientLight(0xffffff, 1);
         scene.add(ambientLight);
-
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
         directionalLight.position.set(200, 200, 200);
         scene.add(directionalLight);
-
         globe = new ThreeGlobe()
           .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
           .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png');
         scene.add(globe);
-
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableZoom = false;
         controls.enablePan = false;
         controls.enableRotate = true;
-
         window.addEventListener("resize", onWindowResize, false);
         animate();
       } catch (err) {
@@ -290,7 +286,6 @@
       globe.rotation.y += 0.001;
       renderer.render(scene, camera);
     }
-
     /*******************************************************
      * GHG Chart (Country-Specific)
      *******************************************************/
@@ -298,7 +293,6 @@
       US: "USD", IN: "INR", GB: "GBP", AU: "AUD", DE: "EUR",
       CA: "CAD", FR: "EUR", BR: "BRL", JP: "JPY", ZA: "ZAR"
     };
-
     const ghgDataByCountry = {
       US: [
         { name: "Energy", value: 35 },
@@ -371,7 +365,6 @@
         { name: "Others", value: 2 }
       ]
     };
-
     const countryInfo = {
       US: {
         netZeroTarget: "2050",
@@ -414,13 +407,11 @@
         ndc: "34% reduction by 2030 (vs. 2015)"
       }
     };
-
     let ghgChart;
     function initGHGChart() {
       const chartDom = document.getElementById("ghg-chart-container");
       if (!chartDom) return;
       ghgChart = echarts.init(chartDom);
-
       const option = {
         title: {
           text: 'GHG Emissions (No Country Selected)',
@@ -453,7 +444,6 @@
       };
       ghgChart.setOption(option);
     }
-
     function updateGHGChart(countryCode) {
       if (!ghgChart) return;
       const data = ghgDataByCountry[countryCode];
@@ -486,11 +476,9 @@
         series: [{ data: newSeriesData }]
       });
     }
-
     function handleCountryChange() {
       const select = document.getElementById("country-select");
       const code = select.value;
-
       // update currency
       const currencySpan = document.getElementById("selected-currency");
       currencySpan.classList.add('animate-pulse');
@@ -498,10 +486,8 @@
         currencySpan.textContent = countryCurrencyMap[code] || "N/A";
         currencySpan.classList.remove('animate-pulse');
       }, 300);
-
       updateGHGChart(code);
     }
-
     /*******************************************************
      * NDC Chart (All Countries)
      *******************************************************/
@@ -517,13 +503,11 @@
       { name: "JP", value: 46 },
       { name: "ZA", value: 34 }
     ];
-
     let ndcChart;
     function initNDCChart() {
       const ndcDom = document.getElementById("ndc-chart-container");
       if (!ndcDom) return;
       ndcChart = echarts.init(ndcDom);
-
       const option = {
         title: {
           text: 'All Countries NDC (%)',
@@ -544,7 +528,6 @@
       };
       ndcChart.setOption(option);
     }
-
     /*******************************************************
      * Scope Emissions Chart (All Countries)
      *******************************************************/
@@ -560,7 +543,6 @@
       { name: "JP (Scope 1/2/3)", value: 190 },
       { name: "ZA (Scope 1/2/3)", value: 100 }
     ];
-
     let scopeChart;
     function initScopeChart() {
       const scopeDom = document.getElementById("scope-chart-container");
@@ -583,24 +565,20 @@
       };
       scopeChart.setOption(option);
     }
-
     /*******************************************************
-     * Chatbot (GPT-2 or DeepSeek R1)
+     * Chatbot (DeepSeek R1 for carbon queries, DialoGPT fallback)
      *******************************************************/
     const messagesDiv = document.getElementById("messages");
     const userInput = document.getElementById("userInput");
     const sendBtn = document.getElementById("sendBtn");
-
     sendBtn.addEventListener("click", async () => {
       const text = userInput.value.trim();
       if (!text) return;
-
       // Display user message
       const userMsgDiv = document.createElement("div");
       userMsgDiv.className = "mb-2 text-blue-800";
       userMsgDiv.innerHTML = `<strong>You:</strong> ${text}`;
       messagesDiv.appendChild(userMsgDiv);
-
       // Send to server route "/chat"
       try {
         const response = await fetch("/chat", {
@@ -609,7 +587,6 @@
           body: "message=" + encodeURIComponent(text)
         });
         const data = await response.json();
-
         const botMsgDiv = document.createElement("div");
         botMsgDiv.className = "mb-2 text-green-700";
         botMsgDiv.innerHTML = `<strong>Bot:</strong> ${data.response}`;
@@ -617,34 +594,27 @@
       } catch (err) {
         console.error("Chat error:", err);
       }
-
       // Clear input
       userInput.value = "";
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     });
-
     userInput.addEventListener("keyup", (e) => {
       if (e.key === "Enter") {
         sendBtn.click();
       }
     });
-
     /*******************************************************
      * Window Onload
      *******************************************************/
     window.addEventListener('load', () => {
       // 3D Earth
       init3DEarth().catch(console.error);
-
       // Country-specific GHG chart
       initGHGChart();
-
       // NDC chart (all countries)
       initNDCChart();
-
       // Scope chart (all countries)
       initScopeChart();
-
       // Resize handling
       window.addEventListener('resize', () => {
         if (ghgChart) ghgChart.resize();
