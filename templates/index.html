@@ -111,7 +111,6 @@
         </div>
       </div>
     </header>
-
     <div class="section max-w-4xl mx-auto mt-6 px-4">
       <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up">
         <label for="country-select" class="font-bold mb-2 inline-block">
@@ -160,6 +159,7 @@
         </div>
       </div>
     </div>
+
     <div class="section max-w-4xl mx-auto mt-4 px-4">
       <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="50">
         <h2 class="font-bold text-xl mb-2 flex items-center">
@@ -204,7 +204,6 @@
     });
 
     let renderer, scene, camera, globe, controls;
-    
     async function loadOrbitControls() {
       return new Promise((resolve, reject) => {
         const script = document.createElement('script');
@@ -387,7 +386,8 @@
       { name: "ZA (Scope 1/2/3)", value: 100 }
     ];
 
-    let ghgChart;
+    let ghgChart, ndcChart, scopeChart;
+
     function initGHGChart() {
       const chartDom = document.getElementById("ghg-chart-container");
       if (!chartDom) return;
@@ -517,12 +517,48 @@
       updateGHGChart(code);
     }
 
-    window.addEventListener('load', () => {
+    const messagesDiv = document.getElementById("messages");
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    sendBtn.addEventListener("click", async () => {
+      const text = userInput.value.trim();
+      if (!text) return;
+      const userMsgDiv = document.createElement("div");
+      userMsgDiv.className = "mb-2 text-blue-800";
+      userMsgDiv.innerHTML = `<strong>You:</strong> ${text}`;
+      messagesDiv.appendChild(userMsgDiv);
+      
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "message=" + encodeURIComponent(text)
+        });
+        const data = await response.json();
+        const botMsgDiv = document.createElement("div");
+        botMsgDiv.className = "mb-2 text-green-700";
+        botMsgDiv.innerHTML = `<strong>Bot:</strong> ${data.response}`;
+        messagesDiv.appendChild(botMsgDiv);
+      } catch (err) {
+        console.error("Chat error:", err);
+      }
+
+      userInput.value = "";
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+
+    userInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        sendBtn.click();
+      }
+    });
+
+   window.addEventListener('load', () => {
       init3DEarth().catch(console.error);
       initGHGChart();
       initNDCChart();
       initScopeChart();
-      
       window.addEventListener('resize', () => {
         if (ghgChart) ghgChart.resize();
         if (ndcChart) ndcChart.resize();
