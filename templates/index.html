@@ -154,7 +154,6 @@
     </div>
   </div>
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
   <script>
     AOS.init({
@@ -203,10 +202,10 @@
         scene = new THREE.Scene();
 
         camera = new THREE.PerspectiveCamera(
-        45,  // Reduced field of view for fuller coverage
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
+          45,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          1000
         );
         camera.position.set(0, 0, 220);
 
@@ -258,6 +257,7 @@
     window.addEventListener('load', () => {
       init3DEarth().catch(console.error);
     });
+
     const countryCurrencyMap = {
       US: "USD", IN: "INR", GB: "GBP", AU: "AUD", DE: "EUR",
       CA: "CAD", FR: "EUR", BR: "BRL", JP: "JPY", ZA: "ZAR"
@@ -508,5 +508,86 @@
       });
     });
   </script>
+
+  <!-- =============================================== -->
+  <!-- START: Chatbot UI -->
+  <!-- =============================================== -->
+  <div class="max-w-4xl mx-auto mt-8 px-4">
+    <div class="p-6 bg-white rounded-lg shadow-lg" id="chatbot-card">
+      <h2 class="text-2xl font-bold mb-4 flex items-center">
+        <i class="ri-robot-fill text-3xl text-green-600 mr-3"></i>
+        Carbon Calculator AI Bot
+      </h2>
+      <div
+        id="messages"
+        class="border border-gray-300 p-4 h-64 overflow-y-auto mb-4 bg-gray-50 rounded"
+      >
+        <div class="mb-2 text-gray-600">
+          <strong>Bot:</strong> Hello! Ask me about carbon footprints or your activities.
+        </div>
+      </div>
+      <div class="flex">
+        <input 
+          id="userInput" 
+          type="text" 
+          placeholder="Type your question..."
+          class="flex-1 border border-gray-300 rounded-l px-4 py-2 focus:outline-none" 
+        />
+        <button 
+          id="sendBtn" 
+          class="bg-green-600 text-white px-6 py-2 rounded-r hover:bg-green-700 transition-colors"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const messagesDiv = document.getElementById("messages");
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    sendBtn.addEventListener("click", async () => {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      // Display user message
+      const userMsgDiv = document.createElement("div");
+      userMsgDiv.className = "mb-2 text-blue-800";
+      userMsgDiv.innerHTML = `<strong>You:</strong> ${text}`;
+      messagesDiv.appendChild(userMsgDiv);
+
+      // POST to /chat
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "message=" + encodeURIComponent(text)
+        });
+        const data = await response.json();
+
+        const botMsgDiv = document.createElement("div");
+        botMsgDiv.className = "mb-2 text-green-700";
+        botMsgDiv.innerHTML = `<strong>Bot:</strong> ${data.response}`;
+        messagesDiv.appendChild(botMsgDiv);
+      } catch (err) {
+        console.error("Chat error:", err);
+      }
+
+      // Clear input
+      userInput.value = "";
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+
+    userInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        sendBtn.click();
+      }
+    });
+  </script>
+  <!-- =============================================== -->
+  <!-- END: Chatbot UI -->
+  <!-- =============================================== -->
 </body>
 </html>
