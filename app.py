@@ -2,6 +2,7 @@ import math
 import re
 import uuid
 import json
+import os  # <--- ADDED
 import torch
 
 from flask import Flask, render_template, request, jsonify, session
@@ -10,13 +11,15 @@ from transformers import pipeline
 app = Flask(__name__)
 app.secret_key = "your-secret-key"
 
+# Force HF to store caches in /tmp
+os.environ["HF_HOME"] = "/tmp"
+
 # ---------------------
 # 1) GLOBALS
 # ---------------------
-VISITOR_COUNT = 0  # naive approach: increments each time someone hits "/"
-TOTAL_SITE_FOOTPRINT = 0.0  # sums all users' footprints (kg CO2/year)
+VISITOR_COUNT = 0
+TOTAL_SITE_FOOTPRINT = 0.0
 
-# Example sustainability news data
 SUSTAINABILITY_NEWS = [
     {
         "title": "Major breakthrough in renewable energy storage",
@@ -35,11 +38,12 @@ SUSTAINABILITY_NEWS = [
 # ---------------------
 # 2) Chatbot with DeepSeek R1
 # ---------------------
-# text-generation pipeline with trust_remote_code for DeepSeek R1
+# Force usage of /tmp with cache_dir, plus trust_remote_code
 chat_model = pipeline(
     "text-generation",
     model="deepseek-ai/DeepSeek-R1",
     trust_remote_code=True,
+    cache_dir="/tmp",
     device=0 if torch.cuda.is_available() else -1
 )
 
@@ -51,56 +55,41 @@ def get_session_id():
     return session["session_id"]
 
 def parse_and_calculate_carbon(user_text: str) -> str:
-    """
-    Example parser for carbon-related statements.
-    E.g., "drive car 10 km" => returns approximate CO2 emission
-    """
     text = user_text.lower()
-
-    # Example: "drive my car for 10 km"
+    # example: "drive my car 10 km"
     car_match = re.search(r"drive\s.*?(\d+)\s?(km|kilometers?)", text)
     if car_match:
         dist = float(car_match.group(1))
-        co2 = dist * 0.2  # ~0.2 kg CO2 per km
+        co2 = dist * 0.2
         return f"Driving {dist} km emits about {co2:.2f} kg CO₂e."
-
-    # Additional patterns: phone charging, meat consumption, etc.
     return ""
 
 @app.route("/chat", methods=["GET", "POST"])
 def chat():
     if request.method == "POST":
         user_message = request.form.get("message", "").strip()
-
         session_id = get_session_id()
         if session_id not in USER_SESSIONS:
             USER_SESSIONS[session_id] = {"carbon_total": 0.0}
 
-        # Attempt parse for carbon activity
+        # Attempt parse
         carbon_reply = parse_and_calculate_carbon(user_message)
         if carbon_reply:
             return jsonify({"response": carbon_reply})
 
         # Fallback to DeepSeek R1 text-generation
-        # Customize generation params as needed (max_length, temperature, etc.)
         generated = chat_model(user_message, max_length=100, num_return_sequences=1)
-        # The pipeline returns a list of dicts with "generated_text"
         reply = generated[0]["generated_text"]
-
         return jsonify({"response": reply})
 
-    # If GET, just show a simple chat page or redirect
     return render_template("chat.html")
 
+
 # ---------------------
-# 3) Sustainability News Route
+# 3) Sustainability News
 # ---------------------
 @app.route("/news")
 def get_news():
-    """
-    Returns local list of sustainability news as JSON.
-    Could fetch from an external API if desired.
-    """
     return jsonify(SUSTAINABILITY_NEWS)
 
 # ---------------------
@@ -110,9 +99,8 @@ def get_news():
 def index():
     global VISITOR_COUNT
     VISITOR_COUNT += 1
-
     return render_template(
-        "index.html", 
+        "index.html",
         visitor_count=VISITOR_COUNT,
         total_site_footprint=round(TOTAL_SITE_FOOTPRINT, 2)
     )
@@ -132,10 +120,9 @@ def current_scenario():
 def calculator():
     if request.method == "POST":
         try:
-            # Collect form data
             home_type = request.form.get('home_type')
             electricity_bill = request.form.get('electricity_bill')
-            renewable_usage = request.form.get('renewable_usage')  
+            renewable_usage = request.form.get('renewable_usage')
             has_vehicle = request.form.get('has_vehicle')
             vehicle_efficiency = request.form.get('vehicle_efficiency')
             public_transport = request.form.get('public_transport')
@@ -154,7 +141,6 @@ def calculator():
             second_hand = request.form.get('second_hand')
             vacation_frequency = request.form.get('vacation_frequency')
 
-            # Example factor dictionaries
             factors = {
                 'home_type': {
                     'apartment_small': 0.7,
@@ -201,7 +187,6 @@ def calculator():
                 }
             }
 
-            # Basic calculations
             home_emissions = factors['home_type'][home_type] * factors['electricity'][electricity_bill]
 
             if has_vehicle == 'yes':
@@ -213,10 +198,10 @@ def calculator():
             flight_emissions = short_flights * 500 + long_flights * 1500
             food_emissions = factors['diet'][diet_type] * factors['food_source'][food_source]
 
-            base_waste = factors['waste'][waste_bags]
+            w_base = factors['waste'][waste_bags]
             if len(recycling) > 2:
-                base_waste *= 0.8
-            waste_emissions = base_waste
+                w_base *= 0.8
+            waste_emissions = w_base
 
             total_emissions = (
                 home_emissions + transport_emissions +
@@ -224,7 +209,7 @@ def calculator():
                 waste_emissions
             )
 
-            # Qualitative multipliers
+            # qualitative multipliers
             if renewable_usage == 'partial':
                 total_emissions *= 0.95
             elif renewable_usage == 'mostly':
@@ -265,14 +250,12 @@ def calculator():
             elif second_hand == 'sometimes':
                 total_emissions *= 0.98
 
-            # Round final
             total_emissions = round(total_emissions, 2)
 
-            # Trees needed per day
+            # Trees needed
             trees_needed_year = total_emissions / 20.0
             trees_needed_day = round(trees_needed_year / 365.0, 2)
 
-            # Update global total footprint
             global TOTAL_SITE_FOOTPRINT
             TOTAL_SITE_FOOTPRINT += total_emissions
 
@@ -293,6 +276,7 @@ def calculator():
             return render_template("calculator.html", error=str(e))
 
     return render_template("calculator.html")
+
 
 if __name__ == "__main__":
     app.run(debug=True)
