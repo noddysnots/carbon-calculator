@@ -53,9 +53,6 @@
            <div class="section" id="section-1" data-aos="fade-up">
                <h2 class="text-2xl font-bold mb-6">
                    <i class="ri-home-4-line text-3xl text-green-600 mr-3"></i>Home Energy
-                   <button type="button" class="ml-2 text-gray-500 hover:text-gray-700" onclick="showTooltip('home-tip')">
-                       <i class="ri-information-line"></i>
-                   </button>
                </h2>
                <div class="space-y-6">
                    <div>
@@ -100,6 +97,16 @@
                            <option value="very_high">$200+</option>
                        </select>
                    </div>
+
+                   <!-- NEW OR MODIFIED: More Qualitative Home Energy -->
+                   <div>
+                       <label class="block mb-2">Do you use or purchase renewable energy (e.g., solar, wind)?</label>
+                       <select name="renewable_usage" class="w-full p-2 border rounded">
+                           <option value="none">No, none</option>
+                           <option value="partial">Partially (some renewable in my energy mix)</option>
+                           <option value="mostly">Mostly or fully renewable</option>
+                       </select>
+                   </div>
                </div>
            </div>
 
@@ -107,9 +114,6 @@
            <div class="section hidden" id="section-2" data-aos="fade-up">
                <h2 class="text-2xl font-bold mb-6">
                    <i class="ri-car-line text-3xl text-blue-600 mr-3"></i>Transportation
-                   <button type="button" class="ml-2 text-gray-500 hover:text-gray-700" onclick="showTooltip('transport-tip')">
-                       <i class="ri-information-line"></i>
-                   </button>
                </h2>
                <div class="space-y-6">
                    <!-- Personal Vehicle -->
@@ -155,6 +159,16 @@
                            <input type="number" name="long_flights" min="0" class="w-full p-2 border rounded">
                        </div>
                    </div>
+
+                   <!-- NEW OR MODIFIED: Qualitative transport question -->
+                   <div>
+                       <label class="block mb-2">Do you carpool or rideshare frequently?</label>
+                       <select name="carpool_freq" class="w-full p-2 border rounded">
+                           <option value="never">Never</option>
+                           <option value="sometimes">Sometimes</option>
+                           <option value="often">Often</option>
+                       </select>
+                   </div>
                </div>
            </div>
 
@@ -162,9 +176,6 @@
            <div class="section hidden" id="section-3" data-aos="fade-up">
                <h2 class="text-2xl font-bold mb-6">
                    <i class="ri-restaurant-line text-3xl text-yellow-600 mr-3"></i>Food and Diet
-                   <button type="button" class="ml-2 text-gray-500 hover:text-gray-700" onclick="showTooltip('food-tip')">
-                       <i class="ri-information-line"></i>
-                   </button>
                </h2>
                <div class="space-y-6">
                    <div>
@@ -195,6 +206,16 @@
                            <option value="high">High (6+ portions)</option>
                        </select>
                    </div>
+
+                   <!-- NEW: Eating out or cooking at home? -->
+                   <div>
+                       <label class="block mb-2">How often do you dine out or order takeout?</label>
+                       <select name="dine_out_frequency" class="w-full p-2 border rounded">
+                           <option value="rarely">Rarely (0-1 times/week)</option>
+                           <option value="moderate">Moderate (2-3 times/week)</option>
+                           <option value="frequent">Frequent (4+ times/week)</option>
+                       </select>
+                   </div>
                </div>
            </div>
 
@@ -202,9 +223,6 @@
            <div class="section hidden" id="section-4" data-aos="fade-up">
                <h2 class="text-2xl font-bold mb-6">
                    <i class="ri-recycle-line text-3xl text-purple-600 mr-3"></i>Waste Management
-                   <button type="button" class="ml-2 text-gray-500 hover:text-gray-700" onclick="showTooltip('waste-tip')">
-                       <i class="ri-information-line"></i>
-                   </button>
                </h2>
                <div class="space-y-6">
                    <div>
@@ -238,6 +256,16 @@
                            </label>
                        </div>
                    </div>
+
+                   <!-- NEW: Composting & other waste -->
+                   <div>
+                       <label class="block mb-2">Do you compost your organic waste?</label>
+                       <select name="composting" class="w-full p-2 border rounded">
+                           <option value="no">No</option>
+                           <option value="sometimes">Sometimes</option>
+                           <option value="yes">Yes, regularly</option>
+                       </select>
+                   </div>
                </div>
            </div>
 
@@ -245,9 +273,6 @@
            <div class="section hidden" id="section-5" data-aos="fade-up">
                <h2 class="text-2xl font-bold mb-6">
                    <i class="ri-shopping-bag-line text-3xl text-pink-600 mr-3"></i>Lifestyle & Shopping
-                   <button type="button" class="ml-2 text-gray-500 hover:text-gray-700" onclick="showTooltip('lifestyle-tip')">
-                       <i class="ri-information-line"></i>
-                   </button>
                </h2>
                <div class="space-y-6">
                    <div>
@@ -276,145 +301,152 @@
                            <option value="rarely">Rarely</option>
                        </select>
                    </div>
+
+                   <!-- NEW: Travel/vacation frequency (qualitative) -->
+                   <div>
+                       <label class="block mb-2">How often do you take vacation trips? (any type)</label>
+                       <select name="vacation_frequency" class="w-full p-2 border rounded">
+                           <option value="rarely">Rarely (0-1 per year)</option>
+                           <option value="couple_year">A couple times a year</option>
+                           <option value="frequent">3+ times a year</option>
+                       </select>
+                   </div>
+
                </div>
            </div>
 
            <!-- Navigation buttons -->
            <div class="flex flex-col sm:flex-row justify-between gap-4 mt-8">
-            <div class="flex space-x-4">
-                <button type="button" onclick="prevSection()" 
-                        class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors flex items-center">
-                    <i class="ri-arrow-left-line mr-2"></i>Previous
-                </button>
-                <button type="button" onclick="nextSection()" id="next-btn"
-                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center">
-                    Next<i class="ri-arrow-right-line ml-2"></i>
-                </button>
-            </div>
-            <div class="flex space-x-4">
-                <button type="button" onclick="fillAverageValues()"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center">
-                    <i class="ri-user-line mr-2"></i>Try Average User
-                </button>
-                <button type="submit" id="submit-btn"
-                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors hidden">
-                    <i class="ri-calculator-line mr-2"></i>Calculate
-                </button>
-            </div>
-        </div>
-    </form>
-</div>
+               <div class="flex space-x-4">
+                   <button type="button" onclick="prevSection()" 
+                           class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors flex items-center">
+                       <i class="ri-arrow-left-line mr-2"></i>Previous
+                   </button>
+                   <button type="button" onclick="nextSection()" id="next-btn"
+                           class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center">
+                       Next<i class="ri-arrow-right-line ml-2"></i>
+                   </button>
+               </div>
+               <div class="flex space-x-4">
+                   <button type="button" onclick="fillAverageValues()"
+                           class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center">
+                       <i class="ri-user-line mr-2"></i>Try Average User
+                   </button>
+                   <button type="submit" id="submit-btn"
+                           class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors hidden">
+                       <i class="ri-calculator-line mr-2"></i>Calculate
+                   </button>
+               </div>
+           </div>
+       </form>
+   </div>
 
-<!-- Tooltips -->
-<div id="home-tip" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-    <div class="bg-white p-6 rounded-lg max-w-md">
-        <h3 class="text-lg font-bold mb-2">About Home Energy</h3>
-        <p class="text-gray-600 mb-4">Your home energy usage contributes significantly to your carbon footprint through electricity consumption, heating, and appliances.</p>
-        <button onclick="hideTooltip('home-tip')" class="bg-green-600 text-white px-4 py-2 rounded">Close</button>
-    </div>
-</div>
+   <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+   <script>
+       AOS.init();
+       
+       let currentSection = 1;
+       const totalSections = 5;
 
-<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-<script>
-    AOS.init();
-    
-    let currentSection = 1;
-    const totalSections = 5;
+       function updateProgress() {
+           const progress = (currentSection / totalSections) * 100;
+           document.getElementById('progress-bar').style.width = `${progress}%`;
+           document.getElementById('progress-text').textContent = `Step ${currentSection} of ${totalSections}`;
+           document.getElementById('section-name').textContent = document.querySelector(`#section-${currentSection} h2`).textContent.trim();
+       }
 
-    function updateProgress() {
-        const progress = (currentSection / totalSections) * 100;
-        document.getElementById('progress-bar').style.width = `${progress}%`;
-        document.getElementById('progress-text').textContent = `Step ${currentSection} of ${totalSections}`;
-        document.getElementById('section-name').textContent = document.querySelector(`#section-${currentSection} h2`).textContent.trim();
-    }
+       function showSection(num) {
+           document.querySelectorAll('.section').forEach(section => section.classList.add('hidden'));
+           document.getElementById(`section-${num}`).classList.remove('hidden');
+           
+           const nextBtn = document.getElementById('next-btn');
+           const submitBtn = document.getElementById('submit-btn');
+           
+           if (num === totalSections) {
+               nextBtn.classList.add('hidden');
+               submitBtn.classList.remove('hidden');
+           } else {
+               nextBtn.classList.remove('hidden');
+               submitBtn.classList.add('hidden');
+           }
+           updateProgress();
+       }
 
-    function showSection(num) {
-        document.querySelectorAll('.section').forEach(section => section.classList.add('hidden'));
-        document.getElementById(`section-${num}`).classList.remove('hidden');
-        
-        const nextBtn = document.getElementById('next-btn');
-        const submitBtn = document.getElementById('submit-btn');
-        
-        if (num === totalSections) {
-            nextBtn.classList.add('hidden');
-            submitBtn.classList.remove('hidden');
-        } else {
-            nextBtn.classList.remove('hidden');
-            submitBtn.classList.add('hidden');
-        }
-        updateProgress();
-    }
+       function nextSection() {
+           if (currentSection < totalSections) {
+               currentSection++;
+               showSection(currentSection);
+           }
+       }
 
-    function nextSection() {
-        if (currentSection < totalSections) {
-            currentSection++;
-            showSection(currentSection);
-        }
-    }
+       function prevSection() {
+           if (currentSection > 1) {
+               currentSection--;
+               showSection(currentSection);
+           }
+       }
 
-    function prevSection() {
-        if (currentSection > 1) {
-            currentSection--;
-            showSection(currentSection);
-        }
-    }
+       function toggleVehicleQuestions() {
+           const hasVehicle = document.querySelector('[name="has_vehicle"]').value;
+           const vehicleQuestions = document.getElementById('vehicle-questions');
+           vehicleQuestions.style.display = hasVehicle === 'yes' ? 'block' : 'none';
+       }
 
-    function toggleVehicleQuestions() {
-        const hasVehicle = document.querySelector('[name="has_vehicle"]').value;
-        const vehicleQuestions = document.getElementById('vehicle-questions');
-        vehicleQuestions.style.display = hasVehicle === 'yes' ? 'block' : 'none';
-    }
+       function fillAverageValues() {
+           // You can adapt these "average" inputs if you like
+           const averageUserData = {
+               home_type: 'house_medium',
+               electricity_bill: 'medium',
+               renewable_usage: 'partial',
 
-    function showTooltip(id) {
-        document.getElementById(id).classList.remove('hidden');
-    }
+               has_vehicle: 'yes',
+               vehicle_efficiency: 'average',
+               public_transport: 'occasionally',
+               short_flights: '1',
+               long_flights: '1',
+               carpool_freq: 'sometimes',
 
-    function hideTooltip(id) {
-        document.getElementById(id).classList.add('hidden');
-    }
+               diet_type: 'omnivore',
+               food_source: 'mixed',
+               food_waste: 'moderate',
+               dine_out_frequency: 'moderate',
 
-    // Average user data and fill function
-    const averageUserData = {
-        home_type: 'house_medium',
-        electricity_bill: 'medium',
-        appliances: ['ac', 'heating', 'washer', 'dryer'],
-        has_vehicle: 'yes',
-        vehicle_efficiency: 'average',
-        public_transport: 'occasionally',
-        short_flights: '2',
-        long_flights: '1',
-        diet_type: 'omnivore',
-        food_source: 'mixed',
-        food_waste: 'moderate',
-        waste_bags: 'medium',
-        recycling: ['paper', 'plastic', 'glass']
-    };
+               waste_bags: 'medium',
+               composting: 'sometimes',
+               // recycling[] is array
+               recycling: ['paper', 'plastic'],
 
-    function fillAverageValues() {
-        Object.entries(averageUserData).forEach(([name, value]) => {
-            const element = document.querySelector(`[name="${name}"]`);
-            if (element) {
-                element.value = value;
-            }
-        });
+               clothing_frequency: 'monthly',
+               electronics_frequency: 'moderate',
+               second_hand: 'sometimes',
+               vacation_frequency: 'couple_year'
+           };
 
-        ['appliances', 'recycling'].forEach(group => {
-            const checkboxes = document.querySelectorAll(`[name="${group}[]"]`);
-            checkboxes.forEach(cb => {
-                cb.checked = averageUserData[group].includes(cb.value);
-            });
-        });
+           Object.entries(averageUserData).forEach(([key, value]) => {
+               // if array of checkboxes
+               if (key === 'recycling') {
+                   document.querySelectorAll(`[name="recycling[]"]`).forEach(checkbox => {
+                       checkbox.checked = value.includes(checkbox.value);
+                   });
+               } else {
+                   const inputEl = document.querySelector(`[name="${key}"]`);
+                   if (inputEl) inputEl.value = value;
+               }
+           });
 
-        if (document.querySelector('[name="has_vehicle"]')) {
-            toggleVehicleQuestions();
-        }
+           toggleVehicleQuestions();
 
-        const feedback = document.createElement('div');
-        feedback.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg transition-opacity duration-500';
-        feedback.textContent = 'Average values filled!';
-        document.body.appendChild(feedback);
-        setTimeout(() => feedback.remove(), 2000);
-    }
-</script>
+           const feedback = document.createElement('div');
+           feedback.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg transition-opacity duration-500';
+           feedback.textContent = 'Average values filled!';
+           document.body.appendChild(feedback);
+           setTimeout(() => feedback.remove(), 2000);
+       }
+
+       window.addEventListener('DOMContentLoaded', () => {
+           showSection(1);
+           toggleVehicleQuestions();
+       });
+   </script>
 </body>
 </html>
