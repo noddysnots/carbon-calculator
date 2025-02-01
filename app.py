@@ -1,20 +1,24 @@
+import os
+# Set ALL environment variables before any other imports
+os.environ["TRANSFORMERS_CACHE"] = "/tmp/transformers"
+os.environ["HF_HOME"] = "/tmp/hf_home"
+os.environ["HF_MODULES_CACHE"] = "/tmp/hf_modules"
+os.environ["XDG_CACHE_HOME"] = "/tmp/cache"
+
 import math
 import re
 import uuid
 import json
-import os  # ✅ Ensure `os` is imported
 import torch
-
 from flask import Flask, render_template, request, jsonify, session
 from transformers import pipeline
 
 app = Flask(__name__)
 app.secret_key = "your-secret-key"
 
-# ✅ Force Hugging Face to store cache files in /tmp
-os.environ["HF_HOME"] = "/tmp"
-os.environ["TRANSFORMERS_CACHE"] = "/tmp"
-os.environ["HF_MODULES_CACHE"] = "/tmp"
+# Create cache directories explicitly
+for directory in ["/tmp/transformers", "/tmp/hf_home", "/tmp/hf_modules", "/tmp/cache"]:
+    os.makedirs(directory, exist_ok=True)
 
 # ---------------------
 # 1) GLOBALS
@@ -31,12 +35,12 @@ SUSTAINABILITY_NEWS = [
 # ---------------------
 # 2) Chatbot with DeepSeek R1
 # ---------------------
-# ✅ Force usage of /tmp with cache_dir, plus trust_remote_code
+# Initialize the model with explicit cache directories
 chat_model = pipeline(
     "text-generation",
     model="deepseek-ai/DeepSeek-R1",
     trust_remote_code=True,
-    cache_dir="/tmp",  # ✅ Ensure cache directory is `/tmp`
+    cache_dir="/tmp/transformers",
     device=0 if torch.cuda.is_available() else -1
 )
 
@@ -76,14 +80,13 @@ def chat():
         if carbon_reply:
             return jsonify({"response": carbon_reply})
 
-        # ✅ Generate response from DeepSeek R1
+        # Generate response from DeepSeek R1
         generated = chat_model(user_message, max_length=100, num_return_sequences=1)
         reply = generated[0]["generated_text"]
 
         return jsonify({"response": reply})
 
     return render_template("chat.html")
-
 
 # ---------------------
 # 3) Sustainability News
@@ -191,7 +194,6 @@ def calculator():
             return render_template("calculator.html", error=str(e))
 
     return render_template("calculator.html")
-
 
 if __name__ == "__main__":
     app.run(debug=True)
