@@ -5,17 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Carbon Footprint Calculator (Sarthak Pant, IIM L)</title>
   
+  <!-- Tailwind, Remix icons, AOS, Three.js, ECharts, etc. -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
-  
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://unpkg.com/three-globe/dist/three-globe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/echarts-gl/dist/echarts-gl.min.js"></script>
 
   <style>
-    /* 3D Earth background, faded */
+    /* Earth background (faded) */
     #earth-bg {
       position: fixed;
       top: 0;
@@ -50,21 +51,6 @@
       -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
-    /* News ticker (placeholder) */
-    #news-ticker {
-      overflow: hidden;
-      white-space: nowrap;
-    }
-    #news-ticker span {
-      display: inline-block;
-      padding-right: 2rem;
-      animation: ticker 25s linear infinite;
-    }
-    @keyframes ticker {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
-    /* Chart containers */
     #ghg-chart-container,
     #ndc-chart-container,
     #scope-chart-container {
@@ -84,7 +70,6 @@
     }
   </style>
 </head>
-
 <body class="bg-gray-100">
   <canvas id="earth-bg"></canvas>
 
@@ -95,10 +80,10 @@
         Carbon Footprint Calculator (Sarthak Pant, IIM L)
       </h1>
       <div class="flex flex-col md:flex-row items-center md:space-x-6">
-        <a href="https://www.linkedin.com/in/sarthak-pant-2458b3142/" 
-           target="_blank" 
-           class="flex items-center hover:text-gray-200 transition-colors" data-aos="fade-left" data-aos-delay="50"
-        >
+        <a href="https://www.linkedin.com/in/sarthak-pant-2458b3142/"
+           target="_blank"
+           class="flex items-center hover:text-gray-200 transition-colors"
+           data-aos="fade-left" data-aos-delay="50">
           <i class="ri-linkedin-box-fill text-2xl mr-2"></i>
           <span>Connect on LinkedIn</span>
         </a>
@@ -120,99 +105,78 @@
     </div>
   </header>
 
-  <!-- Example: site stats or country & currency selection blocks ... -->
-  <!-- (Omitted for brevity, or re-add your code for visitor count, total footprint, etc.) -->
-
-  <!-- News Ticker (Placeholder) -->
+  <!-- 1) Country & Currency Selection -->
   <div class="max-w-4xl mx-auto mt-6 px-4">
-    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover">
-      <h2 class="text-lg font-bold text-blue-700 mb-2 flex items-center">
-        <i class="ri-earth-line mr-2"></i>Latest Sustainability News
-      </h2>
-      <div id="news-ticker" class="text-green-800 font-semibold">
-        <span>UN warns of rising global temperatures... &bull;</span>
-        <span>Local composting reduces waste 30%... &bull;</span>
-        <span>Major airline invests in sustainable aviation fuels... &bull;</span>
+    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up">
+      <label for="country-select" class="font-bold mb-2 inline-block">
+        <i class="ri-global-line mr-2"></i>Select Your Country:
+      </label>
+      <select
+        id="country-select"
+        class="border border-gray-300 rounded px-4 py-2 w-full md:w-auto focus:ring-2 focus:ring-green-500 focus:border-transparent"
+        onchange="handleCountryChange()"
+      >
+        <option value="">--Choose--</option>
+        <option value="US">United States</option>
+        <option value="IN">India</option>
+        <option value="GB">United Kingdom</option>
+        <option value="AU">Australia</option>
+        <option value="DE">Germany</option>
+        <option value="CA">Canada</option>
+        <option value="FR">France</option>
+        <option value="BR">Brazil</option>
+        <option value="JP">Japan</option>
+        <option value="ZA">South Africa</option>
+      </select>
+      <div class="mt-4 p-3 bg-green-50 rounded-lg">
+        <p class="flex items-center">
+          <i class="ri-money-dollar-circle-line mr-2 text-green-600"></i>
+          Your selected currency:
+          <span id="selected-currency" class="ml-2 font-semibold text-green-600">N/A</span>
+        </p>
       </div>
     </div>
   </div>
 
-  <!-- 1) GHG Emissions Pie Chart (Country-Specific) -->
-  <div class="max-w-4xl mx-auto mt-6 px-4">
-    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover">
+  <!-- 2) GHG Emissions Pie Chart (old code) -->
+  <div class="max-w-4xl mx-auto mt-4 px-4 mb-8">
+    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="100">
       <h2 class="font-bold text-xl mb-2 flex items-center">
         <i class="ri-pie-chart-2-line mr-2 text-purple-600"></i>
         Country's Current GHG Emissions
       </h2>
       <p class="text-sm text-gray-700 mb-4 ml-6">
-        Select a country (above) to see approximate % share of GHG sources, net-zero target, etc.
+        (Displays approximate % share of GHG sources; also shows net-zero target & NDC)
       </p>
       <div id="ghg-chart-container"></div>
     </div>
   </div>
 
-  <!-- 2) NDC Pie Chart (All Countries in One Chart) -->
-  <div class="max-w-4xl mx-auto mt-6 px-4">
-    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover">
+  <!-- 3) NDC Chart (all countries in 1 chart) -->
+  <div class="max-w-4xl mx-auto mt-4 px-4 mb-8">
+    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up">
       <h2 class="font-bold text-xl mb-2 flex items-center">
         <i class="ri-pie-chart-fill mr-2 text-blue-600"></i>
-        All Countries NDC (Emission Reduction %)
+        All Countries NDC (Emission Reduction % by 2030)
       </h2>
-      <p class="text-sm text-gray-700 mb-4 ml-6">
-        Each slice shows the pledged emission reduction by 2030.
-      </p>
       <div id="ndc-chart-container"></div>
     </div>
   </div>
 
-  <!-- 3) Scope Emissions (All Countries) -->
-  <div class="max-w-4xl mx-auto mt-6 px-4 mb-8">
-    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover">
+  <!-- 4) Scope Emissions Chart (all countries in 1 chart) -->
+  <div class="max-w-4xl mx-auto mt-4 px-4 mb-8">
+    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up">
       <h2 class="font-bold text-xl mb-2 flex items-center">
         <i class="ri-bubble-chart-line mr-2 text-green-600"></i>
         Scope Emissions by Country
       </h2>
-      <p class="text-sm text-gray-700 mb-4 ml-6">
-        Approximate Scope 1, 2, or 3 coverage (demo).
-      </p>
       <div id="scope-chart-container"></div>
     </div>
   </div>
 
-  <!-- Chatbot UI (if you still want it) -->
-  <div class="max-w-4xl mx-auto px-4 mb-8">
-    <div class="p-6 bg-white rounded-lg shadow-lg" id="chatbot-card">
-      <h2 class="text-2xl font-bold mb-4 flex items-center">
-        <i class="ri-robot-fill text-3xl text-green-600 mr-3"></i>
-        Carbon Calculator AI Bot
-      </h2>
-      <p class="text-sm text-gray-600 mb-2">Type "start" to do a guided flow, or just ask me any question!</p>
-      <div
-        id="messages"
-        class="border border-gray-300 p-4 h-64 overflow-y-auto mb-4 bg-gray-50 rounded"
-      >
-        <div class="mb-2 text-gray-600">
-          <strong>Bot:</strong> Hello! Ask me about carbon footprints or your activities.
-        </div>
-      </div>
-      <div class="flex">
-        <input 
-          id="userInput" 
-          type="text" 
-          placeholder="Type your question..."
-          class="flex-1 border border-gray-300 rounded-l px-4 py-2 focus:outline-none" 
-        />
-        <button 
-          id="sendBtn" 
-          class="bg-green-600 text-white px-6 py-2 rounded-r hover:bg-green-700 transition-colors"
-        >
-          Send
-        </button>
-      </div>
-    </div>
-  </div>
+  <!-- (Optional: total users visited, site footprint, etc.) -->
 
-  <!-- AOS JS -->
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
   <script>
     AOS.init({
@@ -222,9 +186,9 @@
       easing: 'ease-in-out'
     });
 
-    /*******************************************************
+    /****************************************
      * 3D Earth Setup
-     *******************************************************/
+     ****************************************/
     let renderer, scene, camera, globe, controls;
 
     async function loadOrbitControls() {
@@ -247,7 +211,10 @@
       try {
         await loadOrbitControls();
         const canvas = document.getElementById("earth-bg");
-        if (!canvas) return;
+        if (!canvas) {
+          console.error('Canvas element not found');
+          return;
+        }
 
         renderer = new THREE.WebGLRenderer({ 
           canvas, 
@@ -258,6 +225,7 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
         scene = new THREE.Scene();
+
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 0, 220);
 
@@ -281,6 +249,7 @@
 
         window.addEventListener("resize", onWindowResize, false);
         animate();
+
       } catch (error) {
         console.error('Error initializing 3D globe:', error);
       }
@@ -300,12 +269,15 @@
       renderer.render(scene, camera);
     }
 
-    /*******************************************************
-     * 1) GHG Emissions Chart (Per Country)
-     *******************************************************/
-    let chart; // existing GHG chart
+    /****************************************
+     * GHG Chart (country-specific, old code)
+     ****************************************/
+    const countryCurrencyMap = {
+      US: "USD", IN: "INR", GB: "GBP", AU: "AUD", DE: "EUR",
+      CA: "CAD", FR: "EUR", BR: "BRL", JP: "JPY", ZA: "ZAR"
+    };
 
-    // Pre-defined data for GHG + net-zero
+    // Data for each country's GHG breakdown
     const ghgDataByCountry = {
       US: [
         { name: "Energy", value: 35 },
@@ -328,32 +300,127 @@
         { name: "Agriculture", value: 15 },
         { name: "Others", value: 5 }
       ],
-      // ... etc. for other countries ...
+      AU: [
+        { name: "Energy", value: 45 },
+        { name: "Transport", value: 25 },
+        { name: "Industry", value: 20 },
+        { name: "Agriculture", value: 8 },
+        { name: "Others", value: 2 }
+      ],
+      DE: [
+        { name: "Energy", value: 32 },
+        { name: "Transport", value: 25 },
+        { name: "Industry", value: 30 },
+        { name: "Agriculture", value: 10 },
+        { name: "Others", value: 3 }
+      ],
+      CA: [
+        { name: "Energy", value: 38 },
+        { name: "Transport", value: 27 },
+        { name: "Industry", value: 23 },
+        { name: "Agriculture", value: 9 },
+        { name: "Others", value: 3 }
+      ],
+      FR: [
+        { name: "Energy", value: 28 },
+        { name: "Transport", value: 30 },
+        { name: "Industry", value: 25 },
+        { name: "Agriculture", value: 12 },
+        { name: "Others", value: 5 }
+      ],
+      BR: [
+        { name: "Energy", value: 35 },
+        { name: "Transport", value: 20 },
+        { name: "Industry", value: 18 },
+        { name: "Agriculture", value: 22 },
+        { name: "Others", value: 5 }
+      ],
+      JP: [
+        { name: "Energy", value: 40 },
+        { name: "Transport", value: 28 },
+        { name: "Industry", value: 22 },
+        { name: "Agriculture", value: 8 },
+        { name: "Others", value: 2 }
+      ],
+      ZA: [
+        { name: "Energy", value: 50 },
+        { name: "Transport", value: 20 },
+        { name: "Industry", value: 20 },
+        { name: "Agriculture", value: 8 },
+        { name: "Others", value: 2 }
+      ]
     };
 
+    // Info about net zero, NDC, etc.
     const countryInfo = {
       US: {
         netZeroTarget: "2050",
-        ndc: "50-52% reduction by 2030"
+        ndc: "50-52% reduction by 2030 (vs. 2005)"
       },
       IN: {
         netZeroTarget: "2070",
-        ndc: "45% reduction by 2030"
+        ndc: "45% emission intensity reduction by 2030 (vs. 2005)"
       },
       GB: {
         netZeroTarget: "2050",
-        ndc: "At least 68% by 2030"
+        ndc: "At least 68% reduction by 2030 (vs. 1990)"
       },
-      // ...
+      AU: {
+        netZeroTarget: "2050",
+        ndc: "43% reduction by 2030 (vs. 2005)"
+      },
+      DE: {
+        netZeroTarget: "2045",
+        ndc: "65% reduction by 2030 (vs. 1990)"
+      },
+      CA: {
+        netZeroTarget: "2050",
+        ndc: "40-45% reduction by 2030 (vs. 2005)"
+      },
+      FR: {
+        netZeroTarget: "2050",
+        ndc: "55% reduction by 2030 (vs. 1990)"
+      },
+      BR: {
+        netZeroTarget: "2050",
+        ndc: "50% reduction by 2030 (vs. 2005)"
+      },
+      JP: {
+        netZeroTarget: "2050",
+        ndc: "46% reduction by 2030 (vs. 2013)"
+      },
+      ZA: {
+        netZeroTarget: "2050",
+        ndc: "34% reduction by 2030 (vs. 2015)"
+      }
     };
+
+    function handleCountryChange() {
+      const select = document.getElementById("country-select");
+      const selectedCountryCode = select.value;
+
+      // handle currency
+      const currencySpan = document.getElementById("selected-currency");
+      currencySpan.classList.add('animate-pulse');
+      setTimeout(() => {
+        if (selectedCountryCode && countryCurrencyMap[selectedCountryCode]) {
+          currencySpan.textContent = countryCurrencyMap[selectedCountryCode];
+        } else {
+          currencySpan.textContent = "N/A";
+        }
+        currencySpan.classList.remove('animate-pulse');
+      }, 300);
+
+      updateGHGChart(selectedCountryCode);
+    }
+
+    let ghgChart;
 
     function initGHGChart() {
       const chartDom = document.getElementById("ghg-chart-container");
       if (!chartDom) return;
 
-      chart = echarts.init(chartDom);
-
-      // Default (no country selected)
+      ghgChart = echarts.init(chartDom);
       const option = {
         title: {
           text: 'GHG Emissions (No Country Selected)',
@@ -370,82 +437,65 @@
           left: 'left',
           top: 'middle'
         },
-        series: [
-          {
-            name: 'Emissions Share',
-            type: 'pie',
-            radius: '50%',
-            center: ['50%', '60%'],
-            data: [
-              { value: 0, name: 'Energy' },
-              { value: 0, name: 'Transport' },
-              { value: 0, name: 'Industry' },
-              { value: 0, name: 'Agriculture' },
-              { value: 0, name: 'Others' }
-            ]
-          }
-        ]
+        series: [{
+          name: 'Emissions Share',
+          type: 'pie',
+          radius: '50%',
+          center: ['50%', '60%'],
+          data: [
+            { value: 0, name: 'Energy' },
+            { value: 0, name: 'Transport' },
+            { value: 0, name: 'Industry' },
+            { value: 0, name: 'Agriculture' },
+            { value: 0, name: 'Others' }
+          ]
+        }]
       };
-      chart.setOption(option);
+      ghgChart.setOption(option);
     }
 
-    // Update GHG Chart when user changes country
     function updateGHGChart(countryCode) {
-      if (!chart) return;
+      if (!ghgChart) return;
+
       const data = ghgDataByCountry[countryCode];
       const info = countryInfo[countryCode];
       if (!data) {
-        // no data
-        chart.setOption({
+        // No data for that country
+        ghgChart.setOption({
           title: { text: 'GHG Emissions (No Country Selected)' },
           series: [{ data: [] }]
         });
         return;
       }
 
-      chart.setOption({
+      const newSeriesData = data.map(item => ({
+        name: item.name,
+        value: item.value,
+        itemStyle: {
+          color: {
+            'Energy': '#ff7675',
+            'Transport': '#74b9ff',
+            'Industry': '#55efc4',
+            'Agriculture': '#ffeaa7',
+            'Others': '#b2bec3'
+          }[item.name]
+        }
+      }));
+
+      ghgChart.setOption({
         title: {
-          text: `GHG Emissions in ${countryCode}\nNet Zero Target: ${info.netZeroTarget}\nNDC: ${info.ndc}`
+          text: `GHG Emissions in ${countryCode}\nNet Zero Target: ${info.netZeroTarget}\nNDC: ${info.ndc}`,
+          textStyle: { fontSize: 14, lineHeight: 24 }
         },
-        series: [{
-          data: data.map(item => ({
-            name: item.name,
-            value: item.value,
-            itemStyle: {
-              color: {
-                'Energy': '#ff7675',
-                'Transport': '#74b9ff',
-                'Industry': '#55efc4',
-                'Agriculture': '#ffeaa7',
-                'Others': '#b2bec3'
-              }[item.name]
-            }
-          }))
-        }]
+        series: [{ data: newSeriesData }]
       });
     }
 
-    // Called on <select> change
-    function handleCountryChange() {
-      const select = document.getElementById("country-select");
-      const selectedCountry = select.value;
-      updateGHGChart(selectedCountry);
-
-      // optional: update currency label
-      const currencySpan = document.getElementById("selected-currency");
-      currencySpan.classList.add('animate-pulse');
-      setTimeout(() => {
-        currencySpan.textContent = countryCurrencyMap[selectedCountry] || "N/A";
-        currencySpan.classList.remove('animate-pulse');
-      }, 300);
-    }
-
-    /*******************************************************
-     * 2) NDC Pie Chart (All Countries)
-     *******************************************************/
-    // e.g. each country's pledged % for 2030
-    const ndcAllCountries = [
-      { name: "US", value: 50 },  // 50% by 2030
+    /****************************************
+     * NDC Chart (all countries)
+     ****************************************/
+    const ndcData = [
+      { name: "US", value: 50 },
       { name: "IN", value: 45 },
       { name: "GB", value: 68 },
       { name: "AU", value: 43 },
@@ -463,41 +513,31 @@
       if (!ndcDom) return;
 
       ndcChart = echarts.init(ndcDom);
-
       const option = {
         title: {
-          text: 'All Countries NDC',
-          left: 'center'
+          text: "All Countries NDC (%)",
+          left: "center"
         },
-        tooltip: {
-          trigger: 'item',
-          formatter: '{b}: {c}%'
-        },
-        legend: {
-          orient: 'vertical',
-          left: 'left'
-        },
+        tooltip: { trigger: "item", formatter: '{b}: {c}%' },
+        legend: { orient: "vertical", left: "left" },
         series: [{
-          name: 'NDC',
-          type: 'pie',
-          radius: '50%',
-          center: ['50%', '50%'],
-          data: ndcAllCountries.map(item => ({
+          name: "NDC",
+          type: "pie",
+          radius: "50%",
+          center: ["50%", "50%"],
+          data: ndcData.map(item => ({
             name: item.name + ` (${item.value}%)`,
             value: item.value
           }))
         }]
       };
-
       ndcChart.setOption(option);
     }
 
-    /*******************************************************
-     * 3) Scope Emissions (All Countries in One Chart)
-     *******************************************************/
-    // Suppose we do a simple example: each country has a "scope" value
-    // or we do a breakdown of scope 1,2,3. We'll do single slice per country.
-    const scopeAllCountries = [
+    /****************************************
+     * Scope Emissions Chart (all countries)
+     ****************************************/
+    const scopeData = [
       { name: "US (Scope 1/2/3)", value: 200 },
       { name: "IN (Scope 1/2/3)", value: 150 },
       { name: "GB (Scope 1/2/3)", value: 180 },
@@ -516,97 +556,46 @@
       if (!scopeDom) return;
 
       scopeChart = echarts.init(scopeDom);
-
       const option = {
         title: {
-          text: 'Scope Emissions (All Countries)',
-          left: 'center'
+          text: "Scope Emissions (All Countries)",
+          left: "center"
         },
-        tooltip: {
-          trigger: 'item',
-          formatter: '{b}: {c}'
-        },
-        legend: {
-          orient: 'vertical',
-          left: 'left'
-        },
+        tooltip: { trigger: 'item' },
+        legend: { orient: 'vertical', left: 'left' },
         series: [{
-          name: 'Scope',
-          type: 'pie',
-          radius: '50%',
-          center: ['50%', '50%'],
-          data: scopeAllCountries
+          name: "Scope",
+          type: "pie",
+          radius: "50%",
+          center: ["50%", "50%"],
+          data: scopeData
         }]
       };
       scopeChart.setOption(option);
     }
 
-    /*******************************************************
-     * On Window Load
-     *******************************************************/
-    window.addEventListener("load", () => {
-      // Initialize Earth
+    /****************************************
+     * Window onLoad
+     ****************************************/
+    window.addEventListener('load', () => {
+      // 3D Earth
       init3DEarth().catch(console.error);
 
-      // Initialize the GHG chart (per country)
+      // GHG Chart
       initGHGChart();
-      // Initialize the NDC chart (all countries in one pie)
+
+      // NDC Chart
       initNDCChart();
-      // Initialize scope chart (all countries in one pie)
+
+      // Scope Emissions Chart
       initScopeChart();
 
-      // Resize handling
+      // handle chart resizing
       window.addEventListener('resize', () => {
-        if (chart) chart.resize();       // GHG chart
-        if (ndcChart) ndcChart.resize(); // NDC chart
-        if (scopeChart) scopeChart.resize(); // scope chart
+        if (ghgChart) ghgChart.resize();
+        if (ndcChart) ndcChart.resize();
+        if (scopeChart) scopeChart.resize();
       });
-    });
-
-    /*******************************************************
-     * Chatbot + Misc
-     *******************************************************/
-    const messagesDiv = document.getElementById("messages");
-    const userInput = document.getElementById("userInput");
-    const sendBtn = document.getElementById("sendBtn");
-
-    sendBtn.addEventListener("click", async () => {
-      const text = userInput.value.trim();
-      if (!text) return;
-
-      // Display user message
-      const userMsgDiv = document.createElement("div");
-      userMsgDiv.className = "mb-2 text-blue-800";
-      userMsgDiv.innerHTML = `<strong>You:</strong> ${text}`;
-      messagesDiv.appendChild(userMsgDiv);
-
-      // Send to server
-      try {
-        const response = await fetch("/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "message=" + encodeURIComponent(text)
-        });
-        const data = await response.json();
-
-        const botMsgDiv = document.createElement("div");
-        botMsgDiv.className = "mb-2 text-green-700";
-        botMsgDiv.innerHTML = `<strong>Bot:</strong> ${data.response}`;
-        messagesDiv.appendChild(botMsgDiv);
-
-      } catch (err) {
-        console.error("Chat error:", err);
-      }
-
-      // Clear input
-      userInput.value = "";
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    });
-
-    userInput.addEventListener("keyup", (e) => {
-      if (e.key === "Enter") {
-        sendBtn.click();
-      }
     });
   </script>
 </body>
