@@ -1,7 +1,68 @@
+import re
+import torch
+from transformers import pipeline, Conversation
+
 from flask import Flask, render_template, request, jsonify
 import json
 
 app = Flask(__name__)
+
+# =====================
+# 1) Load Hugging Face model for fallback
+#    For a smaller or faster model, use "microsoft/DialoGPT-small".
+chat_model = pipeline(
+    "conversational",
+    model="microsoft/DialoGPT-medium",
+    device=0 if torch.cuda.is_available() else -1
+)
+
+# 2) Basic emission factors (example)
+EMISSION_FACTORS = {
+    "car": 0.2,         # ~kg CO2/km (generic average)
+    "chicken": 6.9,     # ~kg CO2/kg
+    "beef": 27.0,
+    "phone_charge": 0.00003  # kg CO2 per Wh
+}
+
+# 3) Simple function to parse carbon footprint from user text
+def parse_and_calculate_carbon(user_text: str) -> str:
+    text = user_text.lower()
+
+    # Example: "I drive my car for 10 km"
+    car_match = re.search(r"drive\s.*?(\d+)\s?(km|kilometers?)", text)
+    if car_match:
+        distance = float(car_match.group(1))
+        emission = distance * EMISSION_FACTORS["car"]
+        return f"Driving {distance} km emits about {emission:.2f} kg CO₂e."
+
+    # Example: "I eat 300 g of chicken"
+    food_match = re.search(r"eat\s.*?(\d+)\s?g\s(of\s)?(chicken|beef)", text)
+    if food_match:
+        grams = float(food_match.group(1))
+        meat_type = food_match.group(3)  # chicken or beef
+        kg = grams / 1000.0
+        emission = kg * EMISSION_FACTORS[meat_type]
+        return f"Eating {grams} g of {meat_type} has a footprint of about {emission:.2f} kg CO₂e."
+
+    # Example: "charge my phone with a 40 watt charger for 2 hours"
+    phone_match = re.search(r"(\d+)\s?watt.*?(\d+)\s?hour", text)
+    if phone_match:
+        watts = float(phone_match.group(1))
+        hours = float(phone_match.group(2))
+        wh = watts * hours
+        co2 = wh * EMISSION_FACTORS["phone_charge"]
+        return (
+            f"Charging a {watts:.0f}-watt phone charger for {hours:.0f} hour(s) "
+            f"emits about {co2:.4f} kg CO₂e."
+        )
+
+    # If nothing matched, return empty => fallback
+    return ""
+
+
+# =====================
+# 4) Existing routes
+# =====================
 
 # Home route
 @app.route('/')
@@ -41,28 +102,73 @@ def calculator():
 
             # Calculation factors
             factors = {
-                'home_type': {'apartment_small': 0.7, 'apartment_large': 1.0, 'house_small': 1.2, 
-                             'house_medium': 1.5, 'house_large': 2.0},
-                'electricity': {'low': 1200, 'medium': 3600, 'high': 7200, 'very_high': 12000},
-                'appliances': {'ac': 1000, 'heating': 800, 'dishwasher': 300, 'dryer': 400},
-                'vehicle': {'very_efficient': 0.5, 'efficient': 0.7, 'average': 1.0, 'inefficient': 1.3},
-                'public_transport': {'never': 0, 'occasionally': 200, 'regularly': 500, 'daily': 1000},
-                'diet': {'vegan': 1000, 'vegetarian': 1500, 'pescatarian': 1700, 
-                        'omnivore': 2500, 'high_meat': 3500},
-                'food_source': {'mostly_local': 0.8, 'mixed': 1.0, 'mostly_imported': 1.2},
-                'waste': {'minimal': 100, 'low': 200, 'medium': 400, 'high': 800}
+                'home_type': {
+                    'apartment_small': 0.7,
+                    'apartment_large': 1.0,
+                    'house_small': 1.2,
+                    'house_medium': 1.5,
+                    'house_large': 2.0
+                },
+                'electricity': {
+                    'low': 1200,
+                    'medium': 3600,
+                    'high': 7200,
+                    'very_high': 12000
+                },
+                'appliances': {
+                    'ac': 1000,
+                    'heating': 800,
+                    'dishwasher': 300,
+                    'dryer': 400
+                },
+                'vehicle': {
+                    'very_efficient': 0.5,
+                    'efficient': 0.7,
+                    'average': 1.0,
+                    'inefficient': 1.3
+                },
+                'public_transport': {
+                    'never': 0,
+                    'occasionally': 200,
+                    'regularly': 500,
+                    'daily': 1000
+                },
+                'diet': {
+                    'vegan': 1000,
+                    'vegetarian': 1500,
+                    'pescatarian': 1700,
+                    'omnivore': 2500,
+                    'high_meat': 3500
+                },
+                'food_source': {
+                    'mostly_local': 0.8,
+                    'mixed': 1.0,
+                    'mostly_imported': 1.2
+                },
+                'waste': {
+                    'minimal': 100,
+                    'low': 200,
+                    'medium': 400,
+                    'high': 800
+                }
             }
 
             # Calculate emissions
             home_emissions = factors['home_type'][home_type] * factors['electricity'][electricity_bill]
-            transport_emissions = (factors['vehicle'][vehicle_efficiency] * 1000 if has_vehicle == 'yes' else 0) + \
-                                factors['public_transport'][public_transport]
+            transport_emissions = (
+                factors['vehicle'][vehicle_efficiency] * 1000 if has_vehicle == 'yes' else 0
+            ) + factors['public_transport'][public_transport]
             flight_emissions = short_flights * 500 + long_flights * 1500
             food_emissions = factors['diet'][diet_type] * factors['food_source'][food_source]
             waste_emissions = factors['waste'][waste_bags] * (0.8 if len(recycling) > 2 else 1.0)
 
-            total_emissions = home_emissions + transport_emissions + flight_emissions + \
-                            food_emissions + waste_emissions
+            total_emissions = (
+                home_emissions +
+                transport_emissions +
+                flight_emissions +
+                food_emissions +
+                waste_emissions
+            )
 
             return render_template('results.html', data={
                 'total_emissions': round(total_emissions, 2),
@@ -74,6 +180,7 @@ def calculator():
                     'Waste': round(waste_emissions, 2)
                 }
             })
+
         except Exception as e:
             return render_template('calculator.html', error=str(e))
 
@@ -88,31 +195,50 @@ def scope_emissions():
 def current_scenario():
     return render_template('current_scenario.html')
 
-# Chatbot routes
+# =====================
+# 5) Chatbot Route
+# =====================
 @app.route('/chat', methods=['GET', 'POST'])
 def chat():
     if request.method == 'POST':
-        user_message = request.form.get('message', '').lower()
-        response = get_chatbot_response(user_message)
-        return jsonify(response)
+        user_message = request.form.get('message', '')
+
+        # 1. Attempt to parse carbon footprint from user text
+        carbon_reply = parse_and_calculate_carbon(user_message)
+        if carbon_reply:
+            return jsonify({"response": carbon_reply})
+
+        # 2. If no carbon match, check dictionary-based "keyword" approach:
+        #    (Preserving your existing dictionary from 'get_chatbot_response')
+        responses = {
+            'carbon footprint': 'A carbon footprint is the total amount of greenhouse gases emitted.',
+            'reduce': 'You can reduce your footprint by: using energy-efficient appliances, reducing meat consumption, using public transport, and recycling.',
+            'calculate': 'Our calculator helps estimate your emissions based on your lifestyle.',
+            'scope': 'Scope 1 (direct), Scope 2 (indirect energy), and Scope 3 (other indirect) emissions.',
+            'help': 'I can explain carbon footprints, emission scopes, or guide you through calculations.',
+            'diet': 'Diet impacts emissions through food production, transport, and waste.',
+            'transport': 'Transportation emissions come from vehicles, public transit, and flights.',
+            'energy': 'Home energy use includes electricity, heating, and appliances.'
+        }
+
+        user_msg_lower = user_message.lower()
+        for key, val in responses.items():
+            if key in user_msg_lower:
+                return jsonify({"response": val})
+
+        # 3. If not found in dictionary, fallback to Hugging Face (DialoGPT)
+        conv = Conversation(user_message)
+        response = chat_model(conv)
+        if response and response.generated_responses:
+            final_reply = response.generated_responses[-1]
+        else:
+            final_reply = "I'm not sure how to respond."
+
+        return jsonify({"response": final_reply})
+
+    # If GET request, just show a simple page or direct them to index
     return render_template('chat.html')
 
-def get_chatbot_response(message):
-    responses = {
-        'carbon footprint': 'A carbon footprint is the total amount of greenhouse gases emitted.',
-        'reduce': 'You can reduce your footprint by: using energy-efficient appliances, reducing meat consumption, using public transport, and recycling.',
-        'calculate': 'Our calculator helps estimate your emissions based on your lifestyle.',
-        'scope': 'Scope 1 (direct), Scope 2 (indirect energy), and Scope 3 (other indirect) emissions.',
-        'help': 'I can explain carbon footprints, emission scopes, or guide you through calculations.',
-        'diet': 'Diet impacts emissions through food production, transport, and waste.',
-        'transport': 'Transportation emissions come from vehicles, public transit, and flights.',
-        'energy': 'Home energy use includes electricity, heating, and appliances.'
-    }
-    
-    for key, value in responses.items():
-        if key in message:
-            return {'response': value}
-    return {'response': 'How can I help you understand carbon footprints?'}
 
 if __name__ == '__main__':
     app.run(debug=True)
