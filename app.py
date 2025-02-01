@@ -1,40 +1,43 @@
 import os
 import re
-import torch
 import uuid
 import json
+import torch
 
-from transformers import pipeline, Conversation
 from flask import Flask, render_template, request, jsonify, session
 
-app = Flask(__name__)
-app.secret_key = "your-secret-key"  # For session usage
+# 1) Explicit imports from transformers
+from transformers import AutoModelForCausalLM, AutoTokenizer, Conversation, pipeline
 
-# Force caching in /tmp in case the environment variable isn't set outside
+app = Flask(__name__)
+app.secret_key = "your-secret-key"
+
+# Force HF Transformers to store downloads in /tmp
 os.environ["TRANSFORMERS_CACHE"] = "/tmp"
 
-# =====================
-# 1) Load Hugging Face model for fallback
+# 2) Load model + tokenizer with cache_dir
+model_name = "microsoft/DialoGPT-medium"
+model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir="/tmp")
+tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir="/tmp")
+
+# 3) Create pipeline WITHOUT passing cache_dir
 chat_model = pipeline(
     "conversational",
-    model="microsoft/DialoGPT-medium",
-    device=0 if torch.cuda.is_available() else -1,
-    cache_dir="/tmp"  # Also specify explicitly
+    model=model,
+    tokenizer=tokenizer,
+    device=0 if torch.cuda.is_available() else -1
 )
 
-# 2) Basic emission factors (demo)
+# 4) Basic emission factors
 EMISSION_FACTORS = {
-    "car": 0.2,         # ~kg CO2/km
-    "chicken": 6.9,     # ~kg CO2/kg
+    "car": 0.2,
+    "chicken": 6.9,
     "beef": 27.0,
-    "phone_charge": 0.00003  # kg CO2 per Wh
+    "phone_charge": 0.00003
 }
 
 def get_equivalent(co2_amount):
-    """
-    Returns a small message comparing the CO2 amount to some everyday activity.
-    """
-    phone_charge_co2 = 0.005  # Example: 1 phone charge might be ~0.005 kg CO2
+    phone_charge_co2 = 0.005  # e.g. 1 phone charge ~0.005 kg CO2
     phone_charges = co2_amount / phone_charge_co2
     if phone_charges < 1:
         return ""
@@ -43,7 +46,7 @@ def get_equivalent(co2_amount):
 def parse_and_calculate_carbon(user_text: str) -> str:
     text = user_text.lower()
 
-    # 1) Example: "I drive my car for 10 km"
+    # Drive
     car_match = re.search(r"drive\s.*?(\d+)\s?(km|kilometers?)", text)
     if car_match:
         distance = float(car_match.group(1))
@@ -51,17 +54,17 @@ def parse_and_calculate_carbon(user_text: str) -> str:
         eq_msg = get_equivalent(emission)
         return f"Driving {distance} km emits about {emission:.2f} kg CO₂e. {eq_msg}"
 
-    # 2) "I eat 300 g of chicken"
+    # Food
     food_match = re.search(r"eat\s.*?(\d+)\s?g\s(of\s)?(chicken|beef)", text)
     if food_match:
         grams = float(food_match.group(1))
-        meat_type = food_match.group(3)  # chicken or beef
+        meat_type = food_match.group(3)
         kg = grams / 1000.0
         emission = kg * EMISSION_FACTORS[meat_type]
         eq_msg = get_equivalent(emission)
         return f"Eating {grams} g of {meat_type} ~ {emission:.2f} kg CO₂e. {eq_msg}"
 
-    # 3) "charge my phone with a 40 watt charger for 2 hours"
+    # Phone charging
     phone_match = re.search(r"(\d+)\s?watt.*?(\d+)\s?hour", text)
     if phone_match:
         watts = float(phone_match.group(1))
@@ -76,7 +79,6 @@ def parse_and_calculate_carbon(user_text: str) -> str:
 
     return ""
 
-# For session-based multi-turn
 USER_SESSIONS = {}
 
 def get_session_id():
@@ -91,43 +93,36 @@ FLOW_STEPS = [
     "That's all for now! Type 'done' to see your total."
 ]
 
-# Flask Routes
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# Calculator route
 @app.route('/calculator', methods=['GET', 'POST'])
 def calculator():
     if request.method == 'POST':
         try:
-            # Home Energy
+            # -- your existing code --
             home_type = request.form.get('home_type')
             appliances = request.form.getlist('appliances[]')
             electricity_bill = request.form.get('electricity_bill')
             
-            # Transportation
             has_vehicle = request.form.get('has_vehicle')
             vehicle_efficiency = request.form.get('vehicle_efficiency')
             public_transport = request.form.get('public_transport')
             short_flights = int(request.form.get('short_flights', 0))
             long_flights = int(request.form.get('long_flights', 0))
             
-            # Food and Diet
             diet_type = request.form.get('diet_type')
             food_source = request.form.get('food_source')
             food_waste = request.form.get('food_waste')
             
-            # Waste Management
             waste_bags = request.form.get('waste_bags')
             recycling = request.form.getlist('recycling[]')
             
-            # Lifestyle
             clothing_frequency = request.form.get('clothing_frequency')
             electronics_frequency = request.form.get('electronics_frequency')
             second_hand = request.form.get('second_hand')
 
-            # Calculation factors
             factors = {
                 'home_type': {
                     'apartment_small': 0.7,
@@ -180,7 +175,6 @@ def calculator():
                 }
             }
 
-            # Calculate emissions
             home_emissions = factors['home_type'][home_type] * factors['electricity'][electricity_bill]
             transport_emissions = (
                 factors['vehicle'][vehicle_efficiency] * 1000 if has_vehicle == 'yes' else 0
@@ -207,7 +201,6 @@ def calculator():
                     'Waste': round(waste_emissions, 2)
                 }
             })
-
         except Exception as e:
             return render_template('calculator.html', error=str(e))
 
@@ -242,8 +235,7 @@ def chat():
         if carbon_reply:
             match_em = re.search(r"([\d\.]+)\s?kg CO₂e", carbon_reply)
             if match_em:
-                amount = float(match_em.group(1))
-                user_data["carbon_total"] = carbon_sum + amount
+                user_data["carbon_total"] += float(match_em.group(1))
             return jsonify({"response": f"{carbon_reply}\nRunning total: ~{user_data['carbon_total']:.2f} kg CO₂e."})
 
         # 2) Multi-turn flow
@@ -280,13 +272,14 @@ def chat():
             if key in user_msg_lower:
                 return jsonify({"response": val})
 
-        # 4) Fallback to Hugging Face model
+        # 4) Fallback to DialoGPT
         conv = Conversation(user_message)
         response_model = chat_model(conv)
         if response_model and response_model.generated_responses:
             final_reply = response_model.generated_responses[-1]
         else:
             final_reply = "I'm not sure how to respond."
+
         return jsonify({"response": final_reply})
 
     return render_template('chat.html')
