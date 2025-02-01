@@ -147,14 +147,24 @@
     </div>
   </div>
 
-  <!-- Total Users Visited -->
+  <!-- Site Stats (Visitors + Total Site Footprint) -->
   <div class="max-w-4xl mx-auto mt-4 px-4">
     <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="100">
-      <h2 class="font-bold text-lg flex items-center">
-        <i class="ri-user-3-line mr-2 text-blue-600"></i>
-        Total Users Visited Our Site:
-        <span id="total-users" class="text-green-600 ml-2">0</span>
+      <h2 class="font-bold text-lg flex items-center text-blue-600 mb-2">
+        <i class="ri-user-3-line mr-2"></i>Site Stats
       </h2>
+      <p class="text-gray-700 mt-2">
+        Total Visitors:
+        <span class="text-green-600 ml-2 font-bold">
+          {{ visitor_count }} <!-- Coming from Flask app.py -->
+        </span>
+      </p>
+      <p class="text-gray-700 mt-1">
+        Total Carbon Footprint (All Users):
+        <span class="text-red-600 ml-2 font-bold">
+          {{ total_site_footprint }} kg CO₂/year
+        </span>
+      </p>
     </div>
   </div>
 
@@ -170,6 +180,17 @@
         <span>New local composting programs reduce waste by 30%... &bull;</span>
         <span>Major airline invests in sustainable aviation fuels... &bull;</span>
       </div>
+    </div>
+  </div>
+
+  <!-- Additional block for clickable news from /news (optional) -->
+  <div class="max-w-4xl mx-auto mt-4 px-4">
+    <div class="glass-effect p-6 rounded-lg shadow-lg card-hover" data-aos="fade-up" data-aos-delay="180">
+      <h2 class="font-bold text-lg mb-2 flex items-center text-blue-700">
+        <i class="ri-earth-line mr-2"></i> More Sustainability News
+      </h2>
+      <!-- Container for clickable news items loaded from /news -->
+      <div id="news-list" class="space-y-2"></div>
     </div>
   </div>
 
@@ -196,6 +217,7 @@
       offset: 100,
       easing: 'ease-in-out'
     });
+
     /* 3D Earth Setup */
     async function loadOrbitControls() {
       return new Promise((resolve, reject) => {
@@ -212,6 +234,7 @@
         document.head.appendChild(script);
       });
     }
+
     let renderer, scene, camera, globe, controls;
     async function init3DEarth() {
       try {
@@ -221,6 +244,7 @@
           console.error('Canvas element not found');
           return;
         }
+
         renderer = new THREE.WebGLRenderer({ 
           canvas, 
           alpha: true,
@@ -228,52 +252,66 @@
         });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 0, 220);
+
         const ambientLight = new THREE.AmbientLight(0xffffff, 1);
         scene.add(ambientLight);
+
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
         directionalLight.position.set(200, 200, 200);
         scene.add(directionalLight);
+
         globe = new ThreeGlobe()
           .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
           .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png');
+
         scene.add(globe);
+
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableZoom = false;
         controls.enablePan = false;
         controls.enableRotate = true;
+
         window.addEventListener("resize", onWindowResize, false);
         animate();
       } catch (error) {
         console.error('Error initializing 3D globe:', error);
       }
     }
+
     function onWindowResize() {
       if (!camera || !renderer) return;
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
+
     function animate() {
       if (!globe || !renderer || !scene || !camera) return;
       requestAnimationFrame(animate);
       globe.rotation.y += 0.001;
       renderer.render(scene, camera);
     }
+
     window.addEventListener('load', () => {
       init3DEarth().catch(console.error);
       initGHGChart();
+      loadSustainabilityNews();  // Fetch /news items for clickable links
+
       window.addEventListener('resize', () => {
         if (chart) chart.resize();
       });
     });
+
     /* Country -> Currency Map */
     const countryCurrencyMap = {
       US: "USD", IN: "INR", GB: "GBP", AU: "AUD", DE: "EUR",
       CA: "CAD", FR: "EUR", BR: "BRL", JP: "JPY", ZA: "ZAR"
     };
+
     /* GHG Data & Net Zero Info by Country (for Pie Chart) */
     const ghgDataByCountry = {
       US: [
@@ -347,6 +385,7 @@
         { name: "Others", value: 2 }
       ]
     };
+
     const countryInfo = {
       US: {
         netZeroTarget: "2050",
@@ -389,6 +428,7 @@
         ndc: "34% reduction by 2030 (vs. 2015)"
       }
     };
+
     function handleCountryChange() {
       const select = document.getElementById("country-select");
       const currencySpan = document.getElementById("selected-currency");
@@ -404,11 +444,13 @@
       }, 300);
       updateGHGChart(selectedCountryCode);
     }
+
     let chart;
     function initGHGChart() {
       const chartDom = document.getElementById("ghg-chart-container");
       if (!chartDom) return;
       chart = echarts.init(chartDom);
+
       const option = {
         title: {
           text: 'GHG Emissions (No Country Selected)',
@@ -452,10 +494,12 @@
       };
       chart.setOption(option);
     }
+
     function updateGHGChart(countryCode) {
       if (!chart) return;
       const data = ghgDataByCountry[countryCode];
       const info = countryInfo[countryCode];
+
       if (!data) {
         chart.setOption({
           title: { text: 'GHG Emissions (No Country Selected)' },
@@ -471,9 +515,10 @@
         });
         return;
       }
+
       chart.setOption({
         title: {
-          text: GHG Emissions in ${countryCode}\nNet Zero Target: ${info.netZeroTarget}\nNDC: ${info.ndc},
+          text: `GHG Emissions in ${countryCode}\nNet Zero Target: ${info.netZeroTarget}\nNDC: ${info.ndc}`,
           textStyle: {
             fontSize: 14,
             lineHeight: 24
@@ -496,18 +541,22 @@
         }]
       });
     }
+
     /* ==================== Chatbot UI (unchanged) ==================== */
     const messagesDiv = document.getElementById("messages");
     const userInput = document.getElementById("userInput");
     const sendBtn = document.getElementById("sendBtn");
+
     sendBtn.addEventListener("click", async () => {
       const text = userInput.value.trim();
       if (!text) return;
+
       // Display user message
       const userMsgDiv = document.createElement("div");
       userMsgDiv.className = "mb-2 text-blue-800";
-      userMsgDiv.innerHTML = <strong>You:</strong> ${text};
+      userMsgDiv.innerHTML = `<strong>You:</strong> ${text}`;
       messagesDiv.appendChild(userMsgDiv);
+
       // Send to server
       try {
         const response = await fetch("/chat", {
@@ -516,22 +565,47 @@
           body: "message=" + encodeURIComponent(text)
         });
         const data = await response.json();
+
         const botMsgDiv = document.createElement("div");
         botMsgDiv.className = "mb-2 text-green-700";
-        botMsgDiv.innerHTML = <strong>Bot:</strong> ${data.response};
+        botMsgDiv.innerHTML = `<strong>Bot:</strong> ${data.response}`;
         messagesDiv.appendChild(botMsgDiv);
+
       } catch (err) {
         console.error("Chat error:", err);
       }
+
       // Clear input
       userInput.value = "";
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     });
+
     userInput.addEventListener("keyup", (e) => {
       if (e.key === "Enter") {
         sendBtn.click();
       }
     });
+
+    /* ==================== Fetch Additional Sustainability News from /news ==================== */
+    async function loadSustainabilityNews() {
+      try {
+        const res = await fetch("/news");
+        const newsData = await res.json();
+        const newsList = document.getElementById("news-list");
+        newsList.innerHTML = ""; // clear existing
+
+        newsData.forEach(item => {
+          const linkEl = document.createElement("a");
+          linkEl.href = item.link;
+          linkEl.target = "_blank";
+          linkEl.textContent = item.title;
+          linkEl.className = "block text-green-800 hover:underline";
+          newsList.appendChild(linkEl);
+        });
+      } catch (error) {
+        console.error("Error loading sustainability news:", error);
+      }
+    }
   </script>
 </body>
 </html>
