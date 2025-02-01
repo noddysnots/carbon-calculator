@@ -1,9 +1,27 @@
 import os
-# Set ALL environment variables before any other imports
-os.environ["TRANSFORMERS_CACHE"] = "/tmp/transformers"
-os.environ["HF_HOME"] = "/tmp/hf_home"
-os.environ["HF_MODULES_CACHE"] = "/tmp/hf_modules"
-os.environ["XDG_CACHE_HOME"] = "/tmp/cache"
+import sys
+
+# Set environment variables before any other imports
+os.environ["HOME"] = "/tmp"
+os.environ["XDG_CACHE_HOME"] = "/tmp/.cache"
+os.environ["XDG_CONFIG_HOME"] = "/tmp/.config"
+os.environ["TRANSFORMERS_CACHE"] = "/tmp/.cache/huggingface"
+os.environ["HF_HOME"] = "/tmp/.cache/huggingface"
+os.environ["HF_MODULES_CACHE"] = "/tmp/.cache/huggingface/modules"
+
+# Create necessary directories with proper permissions
+cache_dirs = [
+    "/tmp/.cache",
+    "/tmp/.config",
+    "/tmp/.cache/huggingface",
+    "/tmp/.cache/huggingface/modules"
+]
+
+for directory in cache_dirs:
+    try:
+        os.makedirs(directory, mode=0o777, exist_ok=True)
+    except Exception as e:
+        print(f"Error creating directory {directory}: {e}", file=sys.stderr)
 
 import math
 import re
@@ -11,14 +29,11 @@ import uuid
 import json
 import torch
 from flask import Flask, render_template, request, jsonify, session
-from transformers import pipeline
+from transformers import pipeline, AutoConfig, AutoTokenizer, AutoModelForCausalLM
 
+# Initialize Flask app
 app = Flask(__name__)
 app.secret_key = "your-secret-key"
-
-# Create cache directories explicitly
-for directory in ["/tmp/transformers", "/tmp/hf_home", "/tmp/hf_modules", "/tmp/cache"]:
-    os.makedirs(directory, exist_ok=True)
 
 # ---------------------
 # 1) GLOBALS
@@ -35,14 +50,36 @@ SUSTAINABILITY_NEWS = [
 # ---------------------
 # 2) Chatbot with DeepSeek R1
 # ---------------------
-# Initialize the model with explicit cache directories
-chat_model = pipeline(
-    "text-generation",
-    model="deepseek-ai/DeepSeek-R1",
-    trust_remote_code=True,
-    cache_dir="/tmp/transformers",
-    device=0 if torch.cuda.is_available() else -1
-)
+try:
+    # Load model components separately for better error handling
+    config = AutoConfig.from_pretrained(
+        "deepseek-ai/DeepSeek-R1",
+        trust_remote_code=True,
+        cache_dir="/tmp/.cache/huggingface"
+    )
+    
+    tokenizer = AutoTokenizer.from_pretrained(
+        "deepseek-ai/DeepSeek-R1",
+        trust_remote_code=True,
+        cache_dir="/tmp/.cache/huggingface"
+    )
+    
+    model = AutoModelForCausalLM.from_pretrained(
+        "deepseek-ai/DeepSeek-R1",
+        trust_remote_code=True,
+        cache_dir="/tmp/.cache/huggingface",
+        device_map="auto" if torch.cuda.is_available() else None
+    )
+    
+    chat_model = pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        device=0 if torch.cuda.is_available() else -1
+    )
+except Exception as e:
+    print(f"Error loading model: {e}", file=sys.stderr)
+    chat_model = None
 
 USER_SESSIONS = {}
 
@@ -70,6 +107,9 @@ def parse_and_calculate_carbon(user_text: str) -> str:
 @app.route("/chat", methods=["GET", "POST"])
 def chat():
     if request.method == "POST":
+        if chat_model is None:
+            return jsonify({"response": "Chat model is currently unavailable. Please try again later."})
+
         user_message = request.form.get("message", "").strip()
         session_id = get_session_id()
         if session_id not in USER_SESSIONS:
@@ -80,9 +120,13 @@ def chat():
         if carbon_reply:
             return jsonify({"response": carbon_reply})
 
-        # Generate response from DeepSeek R1
-        generated = chat_model(user_message, max_length=100, num_return_sequences=1)
-        reply = generated[0]["generated_text"]
+        try:
+            # Generate response from DeepSeek R1
+            generated = chat_model(user_message, max_length=100, num_return_sequences=1)
+            reply = generated[0]["generated_text"]
+        except Exception as e:
+            print(f"Error generating response: {e}", file=sys.stderr)
+            reply = "I apologize, but I'm having trouble processing your request. Please try again."
 
         return jsonify({"response": reply})
 
