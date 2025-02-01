@@ -28,7 +28,7 @@ SUSTAINABILITY_NEWS = [
 # 2) Chatbot Setup
 # ---------------------
 try:
-    # Initialize DialoGPT model
+    # Initialize DialoGPT model (for general conversation)
     chat_model = pipeline(
         "text-generation",
         model="microsoft/DialoGPT-small",
@@ -36,8 +36,20 @@ try:
     )
     print("Successfully loaded DialoGPT-small model")
 except Exception as e:
-    print(f"Error loading model: {e}", file=sys.stderr)
+    print(f"Error loading DialoGPT model: {e}", file=sys.stderr)
     chat_model = None
+
+try:
+    # Initialize DeepSeek-R1 model (for carbon footprint queries)
+    carbon_model = pipeline(
+        "text-generation",
+        model="DeepSeek-R1",
+        device=0 if torch.cuda.is_available() else -1
+    )
+    print("Successfully loaded DeepSeek-R1 model")
+except Exception as e:
+    print(f"Error loading DeepSeek-R1 model: {e}", file=sys.stderr)
+    carbon_model = None
 
 USER_SESSIONS = {}
 
@@ -48,26 +60,32 @@ def get_session_id():
 
 def parse_and_calculate_carbon(user_text: str) -> str:
     """
-    Example parser for carbon-related statements.
-    E.g., "drive car 10 km" => returns approximate CO2 emission
+    A simple parser that only detects driving statements.
+    For example: "drive my car for 10 km" -> returns an approximate CO₂ emission.
     """
     text = user_text.lower()
 
-    # Example: "drive my car for 10 km"
+    # Example: "drive ... 10 km"
     car_match = re.search(r"drive\s.*?(\d+)\s?(km|kilometers?)", text)
     if car_match:
         dist = float(car_match.group(1))
-        co2 = dist * 0.2  # ~0.2 kg CO2 per km
+        co2 = dist * 0.2  # approximately 0.2 kg CO₂ per km
         return f"Driving {dist} km emits about {co2:.2f} kg CO₂e."
+    
+    # (Additional regex patterns for other carbon-related activities can be added here.)
 
     return ""
+
+def is_carbon_query(text: str) -> bool:
+    """
+    Check if the user's text likely relates to a carbon footprint query.
+    """
+    keywords = ["drive", "car", "km", "emission", "carbon", "footprint", "meat", "charger", "phone", "battery", "consumption"]
+    return any(keyword in text.lower() for keyword in keywords)
 
 @app.route("/chat", methods=["GET", "POST"])
 def chat():
     if request.method == "POST":
-        if chat_model is None:
-            return jsonify({"response": "Chat model is currently unavailable. Please try again later."})
-
         user_message = request.form.get("message", "").strip()
         session_id = get_session_id()
         
@@ -77,13 +95,43 @@ def chat():
                 "conversation_history": []
             }
 
-        # Attempt parse for carbon activity
+        # First, try our simple parser (e.g. for driving statements)
         carbon_reply = parse_and_calculate_carbon(user_message)
         if carbon_reply:
             return jsonify({"response": carbon_reply})
 
+        # If the query appears related to carbon issues and the carbon model is available, use it.
+        if is_carbon_query(user_message) and carbon_model is not None:
+            try:
+                prompt = "Calculate the carbon footprint based on the following information: " + user_message
+                generated = carbon_model(
+                    prompt,
+                    max_length=150,
+                    num_return_sequences=1,
+                    temperature=0.7,
+                    pad_token_id=carbon_model.tokenizer.eos_token_id,
+                    do_sample=True,
+                    top_k=50,
+                    top_p=0.95
+                )
+                reply = generated[0]["generated_text"]
+                # Remove the prompt from the response if present
+                if reply.startswith(prompt):
+                    reply = reply[len(prompt):].strip()
+                USER_SESSIONS[session_id]["conversation_history"].append({
+                    "user": user_message,
+                    "bot": reply
+                })
+                return jsonify({"response": reply})
+            except Exception as e:
+                print(f"Error generating carbon response: {e}", file=sys.stderr)
+                # If something goes wrong with the carbon model, fall back to DialoGPT.
+                pass
+
+        # Fallback: use DialoGPT for general conversation.
+        if chat_model is None:
+            return jsonify({"response": "Chat model is currently unavailable. Please try again later."})
         try:
-            # Generate response with DialoGPT
             generated = chat_model(
                 user_message,
                 max_length=100,
@@ -95,19 +143,13 @@ def chat():
                 top_p=0.95
             )
             reply = generated[0]["generated_text"]
-            
-            # Clean up the response
             if reply.startswith(user_message):
                 reply = reply[len(user_message):].strip()
-            
-            # Store conversation history
             USER_SESSIONS[session_id]["conversation_history"].append({
                 "user": user_message,
                 "bot": reply
             })
-            
             return jsonify({"response": reply})
-            
         except Exception as e:
             print(f"Error generating response: {e}", file=sys.stderr)
             return jsonify({"response": "I apologize, but I'm having trouble processing your request. Please try again."})
