@@ -251,5 +251,7 @@ def calculator():
             return render_template("calculator.html", error=str(e))
     return render_template("calculator.html")
 
+# --- Deployment: Listen on all interfaces using the PORT env variable ---
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 7860))
+    app.run(host="0.0.0.0", port=port, debug=True)
