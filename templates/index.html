@@ -37,12 +37,12 @@
       width: 100%;
       height: 100%;
     }
-    /* Wrap all content so scrolling works on top of fixed background */
+    /* Wrap all content so that scrolling works on top of fixed background */
     #content-wrapper {
       position: relative;
       z-index: 1;
       background: transparent;
-      padding-bottom: 2rem; /* ensure bottom content is visible */
+      padding-bottom: 2rem;
     }
     .card-hover {
       transition: all 0.3s ease;
@@ -214,7 +214,7 @@
     </div>
   </div>
 
-  <!-- AOS and Scripts -->
+  <!-- AOS & Script Section -->
   <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
   <script>
     AOS.init({
@@ -230,7 +230,6 @@
       return colors[value % colors.length];
     }
     function getScopeColor(value) {
-      // For simplicity, use getColorByValue; you can refine this function as needed.
       return getColorByValue(value);
     }
 
@@ -306,92 +305,6 @@
     /*******************************************************
      * GHG Chart (Country-Specific)
      *******************************************************/
-    const ghgDataByCountry = {
-      US: [
-        { name: "Energy", value: 35 },
-        { name: "Transport", value: 28 },
-        { name: "Industry", value: 22 },
-        { name: "Agriculture", value: 10 },
-        { name: "Others", value: 5 }
-      ],
-      IN: [
-        { name: "Energy", value: 40 },
-        { name: "Transport", value: 20 },
-        { name: "Industry", value: 25 },
-        { name: "Agriculture", value: 12 },
-        { name: "Others", value: 3 }
-      ],
-      GB: [
-        { name: "Energy", value: 30 },
-        { name: "Transport", value: 30 },
-        { name: "Industry", value: 20 },
-        { name: "Agriculture", value: 15 },
-        { name: "Others", value: 5 }
-      ],
-      AU: [
-        { name: "Energy", value: 45 },
-        { name: "Transport", value: 25 },
-        { name: "Industry", value: 20 },
-        { name: "Agriculture", value: 8 },
-        { name: "Others", value: 2 }
-      ],
-      DE: [
-        { name: "Energy", value: 32 },
-        { name: "Transport", value: 25 },
-        { name: "Industry", value: 30 },
-        { name: "Agriculture", value: 10 },
-        { name: "Others", value: 3 }
-      ],
-      CA: [
-        { name: "Energy", value: 38 },
-        { name: "Transport", value: 27 },
-        { name: "Industry", value: 23 },
-        { name: "Agriculture", value: 9 },
-        { name: "Others", value: 3 }
-      ],
-      FR: [
-        { name: "Energy", value: 28 },
-        { name: "Transport", value: 30 },
-        { name: "Industry", value: 25 },
-        { name: "Agriculture", value: 12 },
-        { name: "Others", value: 5 }
-      ],
-      BR: [
-        { name: "Energy", value: 35 },
-        { name: "Transport", value: 20 },
-        { name: "Industry", value: 18 },
-        { name: "Agriculture", value: 22 },
-        { name: "Others", value: 5 }
-      ],
-      JP: [
-        { name: "Energy", value: 40 },
-        { name: "Transport", value: 28 },
-        { name: "Industry", value: 22 },
-        { name: "Agriculture", value: 8 },
-        { name: "Others", value: 2 }
-      ],
-      ZA: [
-        { name: "Energy", value: 50 },
-        { name: "Transport", value: 20 },
-        { name: "Industry", value: 20 },
-        { name: "Agriculture", value: 8 },
-        { name: "Others", value: 2 }
-      ]
-    };
-
-    const countryInfo = {
-      US: { netZeroTarget: "2050", ndc: "50-52% reduction by 2030 (vs. 2005)" },
-      IN: { netZeroTarget: "2070", ndc: "45% emission intensity reduction by 2030 (vs. 2005)" },
-      GB: { netZeroTarget: "2050", ndc: "At least 68% reduction by 2030 (vs. 1990)" },
-      AU: { netZeroTarget: "2050", ndc: "43% reduction by 2030 (vs. 2005)" },
-      DE: { netZeroTarget: "2045", ndc: "65% reduction by 2030 (vs. 1990)" },
-      CA: { netZeroTarget: "2050", ndc: "40-45% reduction by 2030 (vs. 2005)" },
-      FR: { netZeroTarget: "2050", ndc: "55% reduction by 2030 (vs. 1990)" },
-      BR: { netZeroTarget: "2050", ndc: "50% reduction by 2030 (vs. 2005)" },
-      JP: { netZeroTarget: "2050", ndc: "46% reduction by 2030 (vs. 2013)" },
-      ZA: { netZeroTarget: "2050", ndc: "34% reduction by 2030 (vs. 2015)" }
-    };
-
     function initGHGChart() {
       const chartDom = document.getElementById("ghg-chart-container");
       if (!chartDom) return;
@@ -433,15 +346,7 @@
       const newSeriesData = data.map(item => ({
         name: item.name,
         value: item.value,
-        itemStyle: {
-          color: {
-            'Energy': '#ff7675',
-            'Transport': '#74b9ff',
-            'Industry': '#55efc4',
-            'Agriculture': '#ffeaa7',
-            'Others': '#b2bec3'
-          }[item.name]
-        }
+        itemStyle: { color: { 'Energy': '#ff7675', 'Transport': '#74b9ff', 'Industry': '#55efc4', 'Agriculture': '#ffeaa7', 'Others': '#b2bec3' }[item.name] }
       }));
       ghgChart.setOption({
         title: {
@@ -452,6 +357,9 @@
       });
     }
 
+    /*******************************************************
+     * NDC Chart (All Countries)
+     *******************************************************/
     function initNDCChart() {
       const ndcDom = document.getElementById("ndc-chart-container");
       if (!ndcDom) return;
@@ -471,6 +379,9 @@
       ndcChart.setOption(option);
     }
 
+    /*******************************************************
+     * Scope Chart (All Countries)
+     *******************************************************/
     function initScopeChart() {
       const scopeDom = document.getElementById("scope-chart-container");
       if (!scopeDom) return;
@@ -523,9 +434,7 @@
               shadowColor: 'rgba(0, 0, 0, 0.5)'
             }
           },
-          labelLine: {
-            show: true
-          },
+          labelLine: { show: true },
           data: scopeAllCountries.map(item => ({
             name: item.name,
             value: item.value,
