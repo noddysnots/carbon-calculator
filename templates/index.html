@@ -88,7 +88,7 @@
     <canvas id="earth-bg"></canvas>
   </div>
 
-  <!-- All Content -->
+  <!-- Content Wrapper -->
   <div id="content-wrapper">
     <!-- HEADER -->
     <header class="bg-green-600 bg-opacity-95 text-white p-4 sticky top-0 z-50 shadow-lg">
@@ -156,7 +156,7 @@
           Country's Current GHG Emissions
         </h2>
         <p class="text-sm text-gray-700 mb-4 ml-6">
-          (Displays the approximate percentage share of greenhouse gas sources, along with the net-zero target and NDC commitments.)
+          (Displays the approximate percentage share of greenhouse gas sources, along with the net‑zero target and NDC commitments.)
         </p>
         <div id="ghg-chart-container"></div>
       </div>
@@ -191,7 +191,7 @@
       </div>
     </div>
 
-    <!-- Section 5: Chatbot (Placed at the very bottom) -->
+    <!-- Section 5: Chatbot (At the bottom, now without its own scrollbar) -->
     <div class="section max-w-4xl mx-auto px-4" data-aos="fade-up" data-aos-delay="200">
       <div class="p-6 bg-white rounded-lg shadow-lg" id="chatbot-card">
         <h2 class="text-2xl font-bold mb-4 flex items-center">
@@ -201,12 +201,13 @@
         <p class="text-sm text-gray-600 mb-2">
           Type "start" for a guided flow, or just ask any question! (I now use DeepSeek‑R1 for carbon footprint queries and DialoGPT for other questions.)
         </p>
-        <div id="messages" class="border border-gray-300 p-4 h-64 overflow-y-auto bg-gray-50 rounded">
+        <!-- Removed h-64 and overflow-y-auto so the container expands with its content -->
+        <div id="messages" class="border border-gray-300 p-4 bg-gray-50 rounded">
           <div class="mb-2 text-gray-600">
             <strong>Bot:</strong> Hello! I'm powered by DeepSeek‑R1 for carbon footprint calculations and DialoGPT for general conversation. How can I help?
           </div>
         </div>
-        <div class="flex">
+        <div class="flex mt-2">
           <input id="userInput" type="text" placeholder="Type your question..." class="flex-1 border border-gray-300 rounded-l px-4 py-2 focus:outline-none" />
           <button id="sendBtn" class="bg-green-600 text-white px-6 py-2 rounded-r hover:bg-green-700 transition-colors">Send</button>
         </div>
@@ -214,10 +215,9 @@
     </div>
   </div>
 
-  <!-- AOS & Script Section -->
+  <!-- AOS & Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
   <script>
-    // Initialize AOS animations
     AOS.init({
       duration: 800,
       once: true,
@@ -343,7 +343,7 @@
       { name: "ZA (Scope 1/2/3)", value: 100 }
     ];
 
-    // --- Helper functions for colors ---
+    // --- Helper functions for chart colors ---
     function getColorByValue(value) {
       const colors = ['#37A2FF', '#FF0087', '#32C5E9', '#67E0E3', '#9FE6B8', '#FFDB5C', '#FF9F7F'];
       return colors[value % colors.length];
@@ -377,11 +377,15 @@
         await loadOrbitControls();
         const canvas = document.getElementById("earth-bg");
         if (!canvas) return;
-        renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer = new THREE.WebGLRenderer({ 
+          canvas,
+          alpha: true,
+          antialias: true
+        });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 0, 220);
         const ambientLight = new THREE.AmbientLight(0xffffff, 1);
         scene.add(ambientLight);
